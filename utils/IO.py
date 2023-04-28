@@ -78,8 +78,10 @@ def read_metadataFile(path: str,
     """
 
     path = os.path.abspath(path)
-    assert os.path.isfile(path), f"No file found at {path}"
-
+    
+    if not os.path.isfile(path): 
+        return None
+    
     X, Y, W, H, i = [], [], [], [], []
 
     with open(path) as file:

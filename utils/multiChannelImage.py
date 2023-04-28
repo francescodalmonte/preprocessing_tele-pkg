@@ -32,13 +32,18 @@ class multiChannelImage():
 
         """    
         image_shape = [int(12500*scale), int(4096*scale)]
-        mask = np.ones()
+        mask = np.ones(image_shape)
 
         centers = self.__get_metadata__(scale = scale)
+        if centers is not None:
+            for c in centers:
+                x, y, w, h, _ = c.astype(int)
+                l = int(size//2)
+                mask[y-h//2-l : y+h//2+l, x-w//2-l : x+w//2+l] = 0
+
+        return mask
 
 
-
-        return 0
     
     def __get_randomCenters__(self, mask):
         """

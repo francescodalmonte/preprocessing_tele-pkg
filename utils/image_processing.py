@@ -26,7 +26,7 @@ def cropImage(image, centers, size = 224,
     crops_set = []
 
     for c in centers:
-        x, y, h, w, id = c.astype(int)
+        x, y, _, _, _ = c.astype(int)
         l = int(size/2)
 
         if rand_shift : x, y = randomShift(x, y, l-25) 
