@@ -1,8 +1,10 @@
 # multiChannelImage class
 
 import os 
+import numpy as np
 
-from IO import read_dirImage, read_metadataFile
+from .IO import read_dirImage, read_metadataFile
+from .image_processing import randomFlip, randomShift, cropImage
 
 class multiChannelImage():
     """Base class for multichannel images"""
@@ -48,20 +50,6 @@ class multiChannelImage():
         return 0
 
 
-    def cropImage(self, image, centers, size = 224):
-        """
-
-        """
-        crops = []
-        for c in centers:
-            x, y, _, _, _ = c.astype(int)
-            l = int(size/2)
-            crops.append(image[y-l : y+l,
-                               x-l : x+l])
-
-        return crops
-
-
 
     def fetch_goodCrops(self, N, scale = 1., size = 224):
         """
@@ -88,7 +76,8 @@ class multiChannelImage():
 
 
 
-    def fetch_anomalousCrops(self, scale = 1., size = 224):
+    def fetch_anomalousCrops(self, scale = 1., size = 224,
+                             rand_shift = False, rand_flip = False):
         """
         Create a set of anomalous crops using the coordinates from the metadata file.
         (This method is based on the cropImage() function).
@@ -107,6 +96,7 @@ class multiChannelImage():
         image = imgs[0].astype(float) - imgs[1].astype(float)
         image = (image + 128.).astype(int)
 
-        crops = self.cropImage(image, centers, size = size)
+        crops = self.cropImage(image, centers, size = size,
+                               rand_flip = rand_flip, rand_shift = rand_shift)
 
         return crops
