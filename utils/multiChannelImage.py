@@ -31,9 +31,12 @@ class multiChannelImage():
         (this function is used to generate random centers for good crops).
 
         """    
-            #######################################
-        ############### da implementare ################
-            #######################################
+        image_shape = [int(12500*scale), int(4096*scale)]
+        mask = np.ones()
+
+        centers = self.__get_metadata__(scale = scale)
+
+
 
         return 0
     
@@ -96,7 +99,7 @@ class multiChannelImage():
         image = imgs[0].astype(float) - imgs[1].astype(float)
         image = (image + 128.).astype(int)
 
-        crops = self.cropImage(image, centers, size = size,
-                               rand_flip = rand_flip, rand_shift = rand_shift)
+        crops = cropImage(image, centers, size = size,
+                          rand_flip = rand_flip, rand_shift = rand_shift)
 
         return crops
