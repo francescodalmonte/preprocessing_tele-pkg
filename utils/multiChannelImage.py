@@ -45,17 +45,18 @@ class multiChannelImage():
 
 
     
-    def __get_randomCenters__(self, mask):
+    def __get_randomCenters__(self, mask, N):
         """
         Generate random centers coordinates given a binary 2D mask.
         (This function is used to generate the set of good crops).
 
-        """
-                ############################################
-        ############### da implementare #####################
-            #######################################
+        """        
+        all_coords = np.argwhere(mask)
+        idxs =  np.random.randint(0, len(all_coords), size=N)
+        
+        centers = all_coords[idxs]
 
-        return 0
+        return centers
 
 
 
