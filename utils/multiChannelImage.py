@@ -25,16 +25,16 @@ class multiChannelImage():
         return read_metadataFile(self.metadataPath,
                                  scale=scale)
 
+
     def __get_goodMask__(self, scale: float = 1., size: int = 224):
         """
         Create a mask of the anomalous area.
         (this function is used to generate random centers for good crops).
 
         """    
-        image_shape = [int(12500*scale), int(4096*scale)]
-        mask = np.ones(image_shape)
+        centers, imshape = self.__get_metadata__(scale = scale)
+        mask = np.ones(imshape)
 
-        centers = self.__get_metadata__(scale = scale)
         if centers is not None:
             for c in centers:
                 x, y, w, h, _ = c.astype(int)
@@ -55,8 +55,11 @@ class multiChannelImage():
         idxs =  np.random.randint(0, len(all_coords), size=N)
         
         centers = all_coords[idxs]
+        
+        extra_col = -1*np.ones(len(centers))
+        padded = np.c_[ centers, extra_col, extra_col, extra_col ]
 
-        return centers
+        return padded.astype(int)
 
 
 
@@ -71,17 +74,23 @@ class multiChannelImage():
 
         Returns
         ----------
+
         """
 
-        # __get_goodMask()
-        # __get_randomCenters()
-        # cropImage
-        
-          ##########################################
-        ########## da implementare ###################
-          ########################################
+        # images
+        imgs = self.__get_images__(scale = scale)   
+        image = imgs[0].astype(float) - imgs[1].astype(float)
+        image = (image + 128.).astype(int)
 
-        return 0 
+        # crops coordinates
+        mask = self.__get_goodMask__(scale = scale, size = size)
+        centers = self.__get_randomCenters__(mask, N = N)
+
+        # run cropImage()
+        crops = cropImage(image, centers, size = size,
+                          rand_flip = False, rand_shift = False)
+
+        return crops 
 
 
 
@@ -99,12 +108,16 @@ class multiChannelImage():
         ----------
 
         """
-        imgs = self.__get_images__(scale = scale)
-        centers = self.__get_metadata__(scale = scale)
-        
+
+        # images
+        imgs = self.__get_images__(scale = scale)   
         image = imgs[0].astype(float) - imgs[1].astype(float)
         image = (image + 128.).astype(int)
 
+        # crops coordinates
+        centers, _ = self.__get_metadata__(scale = scale)
+
+        # run cropImage()
         crops = cropImage(image, centers, size = size,
                           rand_flip = rand_flip, rand_shift = rand_shift)
 

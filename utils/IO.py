@@ -74,7 +74,8 @@ def read_metadataFile(path: str,
 
     Returns
     ----------
-    data: metadata array ([X, Y, W, H, ID]).
+    data: coordinates ([X, Y, W, H, ID], recaled).
+    imshape: images shape ([Width, Height], rescaled).
     """
 
     path = os.path.abspath(path)
@@ -94,8 +95,12 @@ def read_metadataFile(path: str,
                 if(".Height" in line[0]): H.append(float(line[1])*scale)
                 if(".ClassId" in line[0]): i.append(float(line[1]))
 
-    data = np.column_stack((X, Y, W, H, i))
+                if ("ImageHeight" in line[0]): imH = int(float(line[1])*scale)
+                if ("ImageWidth" in line[0]): imW = int(float(line[1])*scale)
 
-    return data
+
+    data = np.column_stack((X, Y, W, H, i)).astype(int)
+
+    return data, [imH, imW]
         
 
