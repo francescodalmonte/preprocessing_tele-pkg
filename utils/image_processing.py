@@ -1,6 +1,10 @@
 # functions for generic image manipulation
 
 import numpy as np
+import os
+import cv2 as cv
+
+
 
 def randomFlip(crop):
     """
@@ -21,6 +25,7 @@ def randomShift(x, y, max_shift = 100):
     y += np.random.randint(-max_shift, max_shift)
     
     return x, y
+
 
 
 def cropImage(image: np.array,
@@ -45,6 +50,7 @@ def cropImage(image: np.array,
 
     """
     crops_set = []
+    centers_set = []
 
     for c in centers:
         x, y, _, _, _ = c.astype(int)
@@ -54,6 +60,24 @@ def cropImage(image: np.array,
         crop = image[y-l : y+l, x-l : x+l]
         if rand_flip : crop = randomFlip(crop) 
 
-        crops_set.append(crop)
+        if crop.shape == (size, size):
+            crops_set.append(crop)
+            centers_set.append([x, y])
 
-    return crops_set
+    return crops_set, centers_set
+
+
+
+def saveCrops(save_to, crops_set, centers_set, prefix):
+    """
+    """
+
+    assert os.path.isdir(save_to), f"No dir found at {save_to}"
+    assert len(crops_set)==len(centers_set), "len() of crops set not matching centers set"
+
+    for crop, coords in zip(crops_set, centers_set):
+        filename = prefix + f"C({coords[0]}-{coords[1]}).png"
+        path = os.path.join(save_to, filename)
+        
+        img = np.array([crop, crop, crop]).transpose(1,2,0)
+        cv.imwrite(path, img)

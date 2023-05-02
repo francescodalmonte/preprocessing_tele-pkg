@@ -35,11 +35,18 @@ class multiChannelImage():
         centers, imshape = self.__get_metadata__(scale = scale)
         mask = np.ones(imshape)
 
+        # margin
+        l = int(size//2) + 5
+
+        mask[:l, :] = 0
+        mask[-l:, :] = 0
+        mask[:, :l] = 0
+        mask[:, -l:] = 0
+
         if centers is not None:
             for c in centers:
                 x, y, w, h, _ = c.astype(int)
-                l = int(size//2)
-                mask[y-h//2-l : y+h//2+l, x-w//2-l : x+w//2+l] = 0
+                mask[y-h-l : y+h+l, x-w-l : x+w+l] = 0
 
         return mask
 
@@ -87,10 +94,10 @@ class multiChannelImage():
         centers = self.__get_randomCenters__(mask, N = N)
 
         # run cropImage()
-        crops = cropImage(image, centers, size = size,
-                          rand_flip = False, rand_shift = False)
+        crops, centers = cropImage(image, centers, size = size,
+                                   rand_flip = False, rand_shift = False)
 
-        return crops 
+        return crops, centers
 
 
 
@@ -118,7 +125,7 @@ class multiChannelImage():
         centers, _ = self.__get_metadata__(scale = scale)
 
         # run cropImage()
-        crops = cropImage(image, centers, size = size,
-                          rand_flip = rand_flip, rand_shift = rand_shift)
+        crops, centers = cropImage(image, centers, size = size,
+                                   rand_flip = rand_flip, rand_shift = rand_shift)
 
-        return crops
+        return crops, centers
