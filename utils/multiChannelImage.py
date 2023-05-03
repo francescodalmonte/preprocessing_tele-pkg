@@ -46,7 +46,13 @@ class multiChannelImage():
         if centers is not None:
             for c in centers:
                 x, y, w, h, _ = c.astype(int)
-                mask[y-h-l : y+h+l, x-w-l : x+w+l] = 0
+
+                top = np.max([0, y-h-l])
+                bottom = np.min([imshape[0], y+h+l])
+                left = np.max([0, x-w-l])
+                right = np.min([imshape[1], x+w+l])
+
+                mask[top : bottom, left : right] = 0
 
         return mask
 
@@ -124,6 +130,7 @@ class multiChannelImage():
 
         # crops coordinates
         centers, _ = self.__get_metadata__(scale = scale)
+        centers = centers[centers[:,4]!=99]
 
         # run cropImage()
         crops, centers = cropImage(image, centers, size = size,
