@@ -64,7 +64,7 @@ def cropImage(image: np.array,
             crops_set.append(crop)
             centers_set.append([x, y])
 
-    return crops_set, centers_set
+    return np.array(crops_set), np.array(centers_set)
 
 
 

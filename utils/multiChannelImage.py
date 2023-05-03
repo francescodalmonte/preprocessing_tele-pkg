@@ -58,10 +58,11 @@ class multiChannelImage():
         (This function is used to generate the set of good crops).
 
         """        
-        all_coords = np.argwhere(mask)
+        all_coords = np.argwhere(mask) # list of (y, x) values
+
         idxs =  np.random.randint(0, len(all_coords), size=N)
         
-        centers = all_coords[idxs]
+        centers = all_coords[idxs][:, ::-1] # list of (x, y) values
         
         extra_col = -1*np.ones(len(centers))
         padded = np.c_[ centers, extra_col, extra_col, extra_col ]
