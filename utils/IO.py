@@ -1,7 +1,7 @@
 # input/output utilities
 
 import os
-from typing import Dict
+from typing import List
 
 import numpy as np
 import cv2 as cv
@@ -104,3 +104,22 @@ def read_metadataFile(path: str,
     return data, [imH, imW]
         
 
+
+def listRawDir(path: str) -> List[str]:
+    """Returns a list of the raw images names in a directory.
+
+    Parameters
+    ----------
+    path: absolute path to root directory.
+
+    Returns
+    ----------
+    names: list of raw images names.
+    """
+
+    names = []
+    for f in os.listdir(os.path.abspath(path)):
+        if f.endswith(".obj"):
+            names.append(f.rsplit(".", 1)[-2])
+
+    return names
