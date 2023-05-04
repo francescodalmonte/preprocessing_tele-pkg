@@ -1,7 +1,7 @@
 import numpy as np
 import time
 
-from preprocess.utils.multiChannelImage import multiChannelImage
+from utils.multiChannelImage import multiChannelImage
 
 np.random.seed(999)
 
