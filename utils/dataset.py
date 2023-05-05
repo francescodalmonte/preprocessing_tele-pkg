@@ -15,15 +15,24 @@ def mkDirTreeFCDD(path: str) -> None:
     """Creates an FCDD-compatible dirtree.
     """
     path = os.path.abspath(path)
+    conditionalMkDir(path)
     conditionalMkDir(os.path.join(path, "custom"))
     conditionalMkDir(os.path.join(path, "custom/test"))
     conditionalMkDir(os.path.join(path, "custom/train"))
+    conditionalMkDir(os.path.join(path, "custom/test_maps"))
+    conditionalMkDir(os.path.join(path, "custom/train_maps"))
     conditionalMkDir(os.path.join(path, "custom/test/tele"))
     conditionalMkDir(os.path.join(path, "custom/train/tele"))
+    conditionalMkDir(os.path.join(path, "custom/test_maps/tele"))
+    conditionalMkDir(os.path.join(path, "custom/train_maps/tele"))
     conditionalMkDir(os.path.join(path, "custom/test/tele/normal"))
     conditionalMkDir(os.path.join(path, "custom/test/tele/anomalous"))
     conditionalMkDir(os.path.join(path, "custom/train/tele/normal"))
     conditionalMkDir(os.path.join(path, "custom/train/tele/anomalous"))
+    conditionalMkDir(os.path.join(path, "custom/test_maps/tele/normal"))
+    conditionalMkDir(os.path.join(path, "custom/test_maps/tele/anomalous"))
+    conditionalMkDir(os.path.join(path, "custom/train_maps/tele/normal"))
+    conditionalMkDir(os.path.join(path, "custom/train_maps/tele/anomalous"))
 
 
 

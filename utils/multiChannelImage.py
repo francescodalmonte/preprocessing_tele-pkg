@@ -93,7 +93,7 @@ class multiChannelImage():
 
         # images
         imgs = self.__get_images__(scale = scale)   
-        image = imgs[0].astype(float) - imgs[1].astype(float)
+        image = imgs[3].astype(float) - imgs[2].astype(float)
         image = (image + 128.).astype(int)
 
         # crops coordinates
@@ -125,7 +125,7 @@ class multiChannelImage():
 
         # images
         imgs = self.__get_images__(scale = scale)   
-        image = imgs[0].astype(float) - imgs[1].astype(float)
+        image = imgs[3].astype(float) - imgs[2].astype(float)
         image = (image + 128.).astype(int)
 
         # crops coordinates
