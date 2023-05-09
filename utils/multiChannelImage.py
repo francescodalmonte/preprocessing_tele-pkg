@@ -77,7 +77,8 @@ class multiChannelImage():
 
 
 
-    def fetch_goodCrops(self, N, scale = 1., size = 224):
+    def fetch_goodCrops(self, N, scale = 1., size = 224,
+                        rand_flip = False):
         """
         Create a set of good crops using randomly generated coordinates.
         (This method is based on the cropImage() function).
@@ -102,7 +103,7 @@ class multiChannelImage():
 
         # run cropImage()
         crops, centers = cropImage(image, centers, size = size,
-                                   rand_flip = False, rand_shift = False)
+                                   rand_flip = rand_flip, rand_shift = False)
 
         return crops, centers
 
