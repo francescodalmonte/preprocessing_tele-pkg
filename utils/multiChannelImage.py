@@ -131,7 +131,7 @@ class multiChannelImage():
 
         # crops coordinates
         centers, _ = self.__get_metadata__(scale = scale)
-        centers = centers[centers[:,4]!=99]
+        centers = centers[centers[:,4]<3] 
 
         # run cropImage()
         crops, centers = cropImage(image, centers, size = size,
