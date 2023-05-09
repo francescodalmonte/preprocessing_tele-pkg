@@ -12,13 +12,10 @@ from utils.dataset import mkDirTreeFCDD, randomSplit
 def setupArgs():
     config = configparser.ConfigParser()
     config_path = os.path.join(os.path.dirname(__file__), "create_cropsDataset.INI")
-    if config_path.exists():
-        try:
-            config.read(config_path)
-        except:
-            raise ValueError(f"can't read configuration file {config_path.absolute()}")
+    if os.path.isfile(config_path):
+        config.read(config_path)
     else:
-        raise ValueError(f"can't find configuration file {config_path.absolute()}")
+        raise ValueError(f"can't find configuration file {config_path}")
     
     return config
 
@@ -26,10 +23,10 @@ def setupArgs():
 if __name__ == "__main__":
 
     # setup input arguments
-    config = setupArgs()
+    config = setupArgs()["DEFAULT"]
 
     start = time.time()
-    np.random.seed(config['SEED'])
+    np.random.seed(int(config['SEED']))
 
     rawNames = listRawDir(config['SOURCE_ROOT'])
     mkDirTreeFCDD(config['SAVE_ROOT'])    
@@ -42,12 +39,12 @@ if __name__ == "__main__":
         print(f"{name}")
 
         # extract crops
-        anomalousCrops, anomalousCenters = object.fetch_anomalousCrops(scale = config['SCALE'],
+        anomalousCrops, anomalousCenters = object.fetch_anomalousCrops(scale = float(config['SCALE']),
                                                                        rand_flip = True,
                                                                        rand_shift = True
                                                                        )
-        goodCrops, goodCenters = object.fetch_goodCrops(scale = config['SCALE'],
-                                                        N = config['N_GOOD'],
+        goodCrops, goodCenters = object.fetch_goodCrops(scale = float(config['SCALE']),
+                                                        N = int(config['N_GOOD']),
                                                         rand_flip = True
                                                         )
 
@@ -70,6 +67,8 @@ if __name__ == "__main__":
 
 
     # split into train and test sets
-    randomSplit(config['SAVE_ROOT'], p_good = config['P_GOOD'], p_anom = config['P_ANOM'])
+    randomSplit(config['SAVE_ROOT'],
+                p_good = float(config['P_GOOD']),
+                p_anom = float(config['P_ANOM']))
 
     print(f"Elapsed time: {(time.time()-start):2f} s")
