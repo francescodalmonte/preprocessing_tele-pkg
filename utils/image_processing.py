@@ -3,7 +3,7 @@
 import numpy as np
 import os
 import cv2 as cv
-
+from scipy.ndimage import gaussian_filter
 
 
 def randomFlip(crop):
@@ -32,7 +32,8 @@ def cropImage(image: np.array,
               centers: np.array,
               size: int = 224,
               rand_shift: bool = False,
-              rand_flip: bool = False) -> np.array:
+              rand_flip: bool = False,
+              gauss_blur: float = None) -> np.array:
     """
     Returns a set of fixed-size square crops of an input image.
 
@@ -43,6 +44,7 @@ def cropImage(image: np.array,
     size: side length of the crop (pixels. Default = 224)
     rand_shift: perform random shift of the centers (default = False).
     rand_flip: perform random flip of the crops (default = False).
+    gauss_blur: size of gaussian blurring kernel (default = None, i.e. no blurring)
 
     Returns
     ----------
@@ -62,6 +64,10 @@ def cropImage(image: np.array,
 
         if crop.shape == (size, size):
             
+            if gauss_blur is not None:
+                # gaussian blurring
+                crop = gaussian_filter(crop, sigma = gauss_blur)
+
             # normalization at single crop level
             crop = (crop - np.mean(crop)) + 128
 

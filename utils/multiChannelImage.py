@@ -78,7 +78,7 @@ class multiChannelImage():
 
 
     def fetch_goodCrops(self, N, scale = 1., size = 224,
-                        rand_flip = False):
+                        rand_flip = False, gauss_blur = None):
         """
         Create a set of good crops using randomly generated coordinates.
         (This method is based on the cropImage() function).
@@ -103,14 +103,15 @@ class multiChannelImage():
 
         # run cropImage()
         crops, centers = cropImage(image, centers, size = size,
-                                   rand_flip = rand_flip, rand_shift = False)
+                                   rand_flip = rand_flip, rand_shift = False,
+                                   gauss_blur = gauss_blur)
 
         return crops, centers
 
 
 
     def fetch_anomalousCrops(self, scale = 1., size = 224,
-                             rand_shift = False, rand_flip = False):
+                             rand_shift = False, rand_flip = False, gauss_blur = None):
         """
         Create a set of anomalous crops using the coordinates from the metadata file.
         (This method is based on the cropImage() function).
@@ -135,6 +136,7 @@ class multiChannelImage():
 
         # run cropImage()
         crops, centers = cropImage(image, centers, size = size,
-                                   rand_flip = rand_flip, rand_shift = rand_shift)
+                                   rand_flip = rand_flip, rand_shift = rand_shift,
+                                   gauss_blur = gauss_blur)
 
         return crops, centers

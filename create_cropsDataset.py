@@ -41,11 +41,13 @@ if __name__ == "__main__":
         # extract crops
         anomalousCrops, anomalousCenters = object.fetch_anomalousCrops(scale = float(config['SCALE']),
                                                                        rand_flip = True,
-                                                                       rand_shift = True
+                                                                       rand_shift = True,
+                                                                       gauss_blur = .8
                                                                        )
         goodCrops, goodCenters = object.fetch_goodCrops(scale = float(config['SCALE']),
                                                         N = int(config['N_GOOD']),
-                                                        rand_flip = True
+                                                        rand_flip = True,
+                                                        gauss_blur = .8
                                                         )
 
         print(f"N. anomalous/N. normal: {len(anomalousCrops)}/{len(goodCrops)}")
