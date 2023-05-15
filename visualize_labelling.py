@@ -8,6 +8,16 @@ from matplotlib import pyplot as plt
 
 from utils.multiChannelImage import multiChannelImage
 
+#####################################################################
+#                                                                   #
+#   Simple script for visualizing the labelled ROIs directly        #
+#   on raw images. Run it from terminal and select the directory    #
+#   with the images; corresponding metadata files are supposed      #
+#   to be in the same parent-directory.                             #
+#                                                                   #
+#####################################################################
+
+
 def draw_ROIs(mcImage, axis):
     """
     """
@@ -15,9 +25,7 @@ def draw_ROIs(mcImage, axis):
     centers, _ = mcImage.__get_metadata__(scale = 1.)
 
     # get image
-    imgs = mcImage.__get_images__(scale = 1.)   
-    image = imgs[3].astype(float) - imgs[2].astype(float)
-    image = (image + 128.).astype(int).T
+    image = mcImage.__get_diffImage()
 
     # draw
     axis.imshow(image, cmap="Greys")
