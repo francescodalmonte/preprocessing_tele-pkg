@@ -21,6 +21,12 @@ class multiChannelImage():
                              scale=scale,
                              format = "bmp")
 
+    def __get_diffImage__(self, scale: float = 1, format: str = "bmp"):
+        imgs = self.__get_images__(scale = scale)
+        diffImage = imgs[3].astype(float) - imgs[2].astype(float)
+        diffImage = (diffImage + 128.).astype(int)
+        return diffImage
+
     def __get_metadata__(self, scale: float = 1):
         return read_metadataFile(self.metadataPath,
                                  scale=scale)
@@ -93,9 +99,7 @@ class multiChannelImage():
         """
 
         # images
-        imgs = self.__get_images__(scale = scale)   
-        image = imgs[3].astype(float) - imgs[2].astype(float)
-        image = (image + 128.).astype(int)
+        image = self.__get_diffImage__(scale = scale)
 
         # crops coordinates
         mask = self.__get_goodMask__(scale = scale, size = size)
@@ -126,9 +130,7 @@ class multiChannelImage():
         """
 
         # images
-        imgs = self.__get_images__(scale = scale)   
-        image = imgs[3].astype(float) - imgs[2].astype(float)
-        image = (image + 128.).astype(int)
+        image = self.__get_diffImage__(scale = scale)
 
         # crops coordinates
         centers, _ = self.__get_metadata__(scale = scale)
