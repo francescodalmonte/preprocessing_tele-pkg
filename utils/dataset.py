@@ -50,15 +50,20 @@ def randomSplit(path: str, p_good: float = 0., p_anom: float = 0. ) -> None:
     """
     path = os.path.abspath(path)
 
-    goodTrainpath = os.path.join(path, "custom/train/tele/normal")
-    goodTestpath = os.path.join(path, "custom/test/tele/normal")
-    anomTrainpath = os.path.join(path, "custom/train/tele/anomalous")
-    anomTestpath = os.path.join(path, "custom/test/tele/anomalous")
+    gTrainpath = os.path.join(path, "custom/train/tele/normal")
+    gTestpath = os.path.join(path, "custom/test/tele/normal")
+    aTrainpath = os.path.join(path, "custom/train/tele/anomalous")
+    aTestpath = os.path.join(path, "custom/test/tele/anomalous")
+
+    gTrainpath_M = os.path.join(path, "custom/train_maps/tele/normal")
+    gTestpath_M = os.path.join(path, "custom/test_maps/tele/normal")
+    aTrainpath_M = os.path.join(path, "custom/train_maps/tele/anomalous")
+    aTestpath_M = os.path.join(path, "custom/test_maps/tele/anomalous")
 
     # lists of crops abspaths
 
-    good_crops = [ f for f in os.listdir(goodTrainpath) if f.endswith(".png") ]
-    anom_crops = [ f for f in os.listdir(anomTrainpath) if f.endswith(".png") ]
+    good_crops = [ f for f in os.listdir(gTrainpath) if f.endswith(".png") ]
+    anom_crops = [ f for f in os.listdir(aTrainpath) if f.endswith(".png") ]
 
     # random split
 
@@ -70,11 +75,23 @@ def randomSplit(path: str, p_good: float = 0., p_anom: float = 0. ) -> None:
     # move files
 
     for f in good_crops_C:
-        source = os.path.join(goodTrainpath, f)
-        destination = os.path.join(goodTestpath, f)
+        source = os.path.join(gTrainpath, f)
+        destination = os.path.join(gTestpath, f)
         os.rename(source, destination)
+
+        if os.path.isfile(os.path.join(gTrainpath_M, f)):
+            source = os.path.join(gTrainpath_M, f)
+            destination = os.path.join(gTestpath_M, f)
+            os.rename(source, destination)
+
+
     for f in anom_crops_C:
-        source = os.path.join(anomTrainpath, f)
-        destination = os.path.join(anomTestpath, f)
+        source = os.path.join(aTrainpath, f)
+        destination = os.path.join(aTestpath, f)
         os.rename(source, destination)
+
+        if os.path.isfile(os.path.join(aTrainpath_M, f)):
+            source = os.path.join(aTrainpath_M, f)
+            destination = os.path.join(aTestpath_M, f)
+            os.rename(source, destination)
 
