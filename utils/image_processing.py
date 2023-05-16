@@ -61,7 +61,7 @@ def cropImage(image: np.array,
         l = int(size/2)
 
         if rand_shift : x, y = randomShift(x, y, l-25) 
-        crop = image[y-l : y+l, x-l : x+l]
+        crop = np.array(image[y-l : y+l, x-l : x+l])
         if rand_flip : crop = randomFlip(crop) 
 
         if crop.shape[:2] == (size, size):
@@ -72,7 +72,7 @@ def cropImage(image: np.array,
 
             if normalize:
                 # normalization at single crop level
-                crop[:,:,0] = (crop[:,:,0] - np.mean(crop)) + 128
+                crop[:,:,0] = (crop[:,:,0] - np.mean(crop[:,:,0])) + 128
 
             crops_set.append(crop)
             centers_set.append([x, y])
