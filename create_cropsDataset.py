@@ -42,31 +42,37 @@ if __name__ == "__main__":
         anomalousCrops, anomalousCenters = object.fetch_anomalousCrops(scale = float(config['SCALE']),
                                                                        rand_flip = True,
                                                                        rand_shift = True,
+                                                                       normalize = True,
                                                                        gauss_blur = .8
                                                                        )
         goodCrops, goodCenters = object.fetch_goodCrops(scale = float(config['SCALE']),
                                                         N = int(config['N_GOOD']),
                                                         rand_flip = True,
+                                                        normalize = True,
                                                         gauss_blur = .8
                                                         )
 
         print(f"N. anomalous/N. normal: {len(anomalousCrops)}/{len(goodCrops)}")
 
-
         # save to file
-        os.listdir()
-
-        saveCrops(os.path.join(config['SAVE_ROOT'], "custom/train/tele/anomalous"),
-                  anomalousCrops,
-                  anomalousCenters,
-                  prefix=name+"_"
-                  )
         saveCrops(os.path.join(config['SAVE_ROOT'], "custom/train/tele/normal"),
-                  goodCrops,
+                  goodCrops[:,:,:,0],
                   goodCenters,
-                  prefix=name+"_"
+                  prefix = name+"_"
                   ) 
 
+        if len(anomalousCrops>0):
+            saveCrops(os.path.join(config['SAVE_ROOT'], "custom/train/tele/anomalous"),
+                      anomalousCrops[:,:,:,0],
+                      anomalousCenters,
+                      prefix = name+"_"
+                      )
+            saveCrops(os.path.join(config['SAVE_ROOT'], "custom/train_maps/tele/anomalous"),
+                      anomalousCrops[:,:,:,1],
+                      anomalousCenters,
+                      prefix = name+"_"
+                      )
+        
 
     # split into train and test sets
     randomSplit(config['SAVE_ROOT'],

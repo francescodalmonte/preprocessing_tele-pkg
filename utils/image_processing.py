@@ -33,6 +33,7 @@ def cropImage(image: np.array,
               size: int = 224,
               rand_shift: bool = False,
               rand_flip: bool = False,
+              normalize: bool = True,
               gauss_blur: float = None) -> np.array:
     """
     Returns a set of fixed-size square crops of an input image.
@@ -44,7 +45,8 @@ def cropImage(image: np.array,
     size: side length of the crop (pixels. Default = 224)
     rand_shift: perform random shift of the centers (default = False).
     rand_flip: perform random flip of the crops (default = False).
-    gauss_blur: size of gaussian blurring kernel (default = None, i.e. no blurring)
+    normalize: whether to normalize or not the final crop (default = True).
+    gauss_blur: size of gaussian blurring kernel (default = None, i.e. no blurring).
 
     Returns
     ----------
@@ -55,21 +57,22 @@ def cropImage(image: np.array,
     centers_set = []
 
     for c in centers:
-        x, y, _, _, _ = c.astype(int)
+        x, y = c[:2].astype(int)
         l = int(size/2)
 
         if rand_shift : x, y = randomShift(x, y, l-25) 
         crop = image[y-l : y+l, x-l : x+l]
         if rand_flip : crop = randomFlip(crop) 
 
-        if crop.shape == (size, size):
+        if crop.shape[:2] == (size, size):
             
             if gauss_blur is not None:
                 # gaussian blurring
-                crop = gaussian_filter(crop, sigma = gauss_blur)
+                crop[:,:,0] = gaussian_filter(crop[:,:,0], sigma = gauss_blur)
 
-            # normalization at single crop level
-            crop = (crop - np.mean(crop)) + 128
+            if normalize:
+                # normalization at single crop level
+                crop[:,:,0] = (crop[:,:,0] - np.mean(crop)) + 128
 
             crops_set.append(crop)
             centers_set.append([x, y])

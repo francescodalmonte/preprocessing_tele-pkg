@@ -2,8 +2,9 @@
 
 import os 
 import numpy as np
+import cv2 as cv
 
-from .IO import read_dirImage, read_metadataFile
+from .IO import read_dirImage, read_metadataFile, read_singleImage
 from .image_processing import randomFlip, randomShift, cropImage
 
 class multiChannelImage():
@@ -12,16 +13,18 @@ class multiChannelImage():
     def __init__(self, name: str, rootpath: str):
 
         self.name = name
-        self.metadataPath = os.path.join(rootpath, name + ".dat")
+        self.rootpath = rootpath
         self.imdirPath = os.path.join(rootpath, name + ".obj")
+        self.metadataPath = os.path.join(rootpath, name + ".dat")
+        self.maskPath = os.path.join(rootpath, name + "_M.png")
 
 
-    def __get_images__(self, scale: float = 1, format: str = "bmp"):
+    def __get_images__(self, scale: float = 1, suffix: str = "bmp"):
         return read_dirImage(self.imdirPath,
                              scale=scale,
-                             format = "bmp")
+                             suffix = "bmp")
 
-    def __get_diffImage__(self, scale: float = 1, format: str = "bmp"):
+    def __get_diffImage__(self, scale: float = 1, suffix: str = "bmp"):
         imgs = self.__get_images__(scale = scale)
         diffImage = imgs[3].astype(float) - imgs[2].astype(float)
         diffImage = (diffImage + 128.).astype(int)
@@ -31,10 +34,12 @@ class multiChannelImage():
         return read_metadataFile(self.metadataPath,
                                  scale=scale)
 
+    def __get_anomalousMask__(self, scale: float = 1):
+        return read_singleImage(self.maskPath, scale = scale)
 
     def __get_goodMask__(self, scale: float = 1., size: int = 224):
         """
-        Create a mask of the anomalous area.
+        Create a mask of the nominal area.
         (this function is used to generate random centers for good crops).
 
         """    
@@ -84,7 +89,9 @@ class multiChannelImage():
 
 
     def fetch_goodCrops(self, N, scale = 1., size = 224,
-                        rand_flip = False, gauss_blur = None):
+                        rand_flip = False,
+                        normalize = True,
+                        gauss_blur = None):
         """
         Create a set of good crops using randomly generated coordinates.
         (This method is based on the cropImage() function).
@@ -105,9 +112,15 @@ class multiChannelImage():
         mask = self.__get_goodMask__(scale = scale, size = size)
         centers = self.__get_randomCenters__(mask, N = N)
 
+        # image for binary masks
+        mask = self.__get_anomalousMask__(scale = scale)
+        image = np.stack((image, mask), axis = 2)
+
         # run cropImage()
         crops, centers = cropImage(image, centers, size = size,
-                                   rand_flip = rand_flip, rand_shift = False,
+                                   rand_flip = rand_flip,
+                                   rand_shift = False,
+                                   normalize = normalize,
                                    gauss_blur = gauss_blur)
 
         return crops, centers
@@ -115,7 +128,11 @@ class multiChannelImage():
 
 
     def fetch_anomalousCrops(self, scale = 1., size = 224,
-                             rand_shift = False, rand_flip = False, gauss_blur = None):
+                             rand_shift = False,
+                             rand_flip = False,
+                             gauss_blur = None,
+                             normalize = True
+                             ):
         """
         Create a set of anomalous crops using the coordinates from the metadata file.
         (This method is based on the cropImage() function).
@@ -136,9 +153,15 @@ class multiChannelImage():
         centers, _ = self.__get_metadata__(scale = scale)
         centers = centers[centers[:,4]<3] 
 
+        # image for binary masks
+        mask = self.__get_anomalousMask__(scale = scale)
+        image = np.stack((image, mask), axis = 2)
+
         # run cropImage()
         crops, centers = cropImage(image, centers, size = size,
-                                   rand_flip = rand_flip, rand_shift = rand_shift,
+                                   rand_flip = rand_flip,
+                                   rand_shift = rand_shift,
+                                   normalize = normalize,
                                    gauss_blur = gauss_blur)
 
         return crops, centers

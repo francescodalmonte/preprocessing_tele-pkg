@@ -35,14 +35,14 @@ def read_singleImage(path: str,
 
 def read_dirImage(path: str,
                   scale: float = 1.,
-                  format: str = "bmp") -> np.array:
+                  suffix: str = "bmp") -> np.array:
     """Read multiple images from directory.
 
         Parameters
     ----------
     path: absolute path to images directory.
     scale: rescaling factor (default = 1).
-    format: allowed image format (default = "bmp")
+    suffix: allowed image format (default = "bmp")
 
     Returns
     ----------
@@ -54,7 +54,7 @@ def read_dirImage(path: str,
 
     imgs = []
     for file in sorted(os.listdir(path)):
-        if file.endswith(format):
+        if file.endswith(suffix):
             imgs.append(read_singleImage(os.path.join(path, file),
                                          scale = scale))
 
