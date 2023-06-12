@@ -20,11 +20,17 @@ class multiChannelImage():
 
 
     def __get_images__(self, scale: float = 1, suffix: str = "bmp"):
+        """
+        Read raw images from file.
+        """
         return read_dirImage(self.imdirPath,
                              scale=scale,
                              suffix = "bmp")
 
     def __get_diffImage__(self, scale: float = 1, suffix: str = "bmp"):
+        """
+        Read raw images and return grazing lights difference image.
+        """
         imgs = self.__get_images__(scale = scale)
         diffImage = imgs[3].astype(float) - imgs[2].astype(float)
         diffImage = (diffImage + 128.).astype(int)
@@ -35,6 +41,10 @@ class multiChannelImage():
                                  scale=scale)
 
     def __get_anomalousMask__(self, scale: float = 1):
+        """
+        Read binary anomaly mask from file.
+        """
+
         return read_singleImage(self.maskPath, scale = scale)
 
     def __get_goodMask__(self, scale: float = 1., size: int = 224):
