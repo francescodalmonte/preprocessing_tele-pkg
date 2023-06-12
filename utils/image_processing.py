@@ -40,7 +40,7 @@ def cropImage(image: np.array,
 
     Parameters
     ----------
-    image: image to be cropped.
+    image: image to be cropped (2 channels: image + binary mask).
     centers: set of centers coordinates of the crops.
     size: side length of the crop (pixels. Default = 224)
     rand_shift: perform random shift of the centers (default = False).
@@ -79,6 +79,30 @@ def cropImage(image: np.array,
 
     return np.array(crops_set), np.array(centers_set)
 
+
+def tileImage(image: np.array,
+              size: int = 224,
+              overlap: int = 0,
+              normalize: bool = True,
+              gauss_blur: float = None) -> np.array:
+    """
+    Create a regular tiling of an image (uses: cropImage function).
+    """
+    imshape = np.shape(image)[:2]
+    y = np.arange(size//2 + 1, imshape[0] - size//2 - 1, size - overlap)
+    x = np.arange(size//2 + 1, imshape[1] - size//2 - 1, size - overlap)
+    grid = np.meshgrid(x, y)
+    coords = np.vstack([grid[0].ravel(), grid[1].ravel()]).T
+    
+    tiles_set, centers_set = cropImage(image = image,
+                                       centers = coords,
+                                       size = size,
+                                       rand_shift = False,
+                                       rand_flip = False,
+                                       normalize = normalize,
+                                       gauss_blur = gauss_blur)
+    
+    return np.array(tiles_set), np.array(centers_set)
 
 
 def saveCrops(save_to, crops_set, centers_set, prefix):
