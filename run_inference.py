@@ -6,7 +6,9 @@
 import numpy as np
 import os
 from matplotlib import pyplot as plt
+from matplotlib import patches as patches
 
+from utils.dataset import conditionalMkDir
 from utils.multiChannelImage import multiChannelImage
 from utils.image_processing import tileImage, saveCrops
 
@@ -22,12 +24,12 @@ image = object.__get_diffImage__()
 empty_mask = np.zeros_like(image)
 image = np.stack((image, empty_mask), axis = 2)
 
-tiles, grid = tileImage(image, 224, 0, gauss_blur = .8)
+tiles, grid = tileImage(image, 224, 20, gauss_blur = .8)
 
 # save to file
 
-save_path = os.path.abspath("C:/Users/Francesco/Pictures/tele/inference_test/")
-saveCrops(os.path.join(save_path, "tiles"),
+ds_path = os.path.abspath("C:/Users/Francesco/Pictures/tele/inference_test/")
+saveCrops(os.path.join(ds_path, "tiles"),
           tiles[:,:,:,0],
           grid,
           prefix = name+"_"
@@ -45,7 +47,7 @@ from fcdd.datasets.image_folder import ImageFolder
 from fcdd.models.fcdd_cnn_224 import FCDD_CNN224_VGG_F
 
 # path to model snapshot
-snapshot = "D:/Users/Francesco/phd/FCDD results/supervised (with masks)/300 epochs/normal_0/it_0/snapshot.pt"
+snapshot = "D:/Users/Francesco/phd/FCDD results/supervised (with masks)/10 epochs/normal_0/it_0/snapshot.pt"
 
 # load model
 model = FCDD_CNN224_VGG_F((3,224,224), bias = True)
@@ -55,15 +57,15 @@ model.load_state_dict(torch.load(snapshot, map_location=torch.device('cpu'))["ne
 transform = transforms.Compose([
             transforms.Resize(224),
             transforms.CenterCrop(224),
-            transforms.ToTensor()
-#            transforms.Normalize([0.,0.,0.], [1.,1.,1.])
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,0.5,0.5), (0.0368, 0.0368, 0.0368))
             ])
 
 logger = None
 quantile = 0.97
 
 # create a dataloader and a trainer
-ds = ImageFolder(save_path, transform)
+ds = ImageFolder(ds_path, transform, transforms.Lambda(lambda x: 0))
 loader = DataLoader(ds, batch_size=1, num_workers=0)
 
 trainer = FCDDTrainer(model, None, None, (None, None), logger, 'fcdd', 8, quantile, 224)
@@ -88,16 +90,49 @@ all_anomaly_scores = torch.cat(all_anomaly_scores)
 reduced_ascores = trainer.reduce_ascore(all_anomaly_scores)
 
 
-# PLOTS
+# RESULTS
+save_path = os.path.abspath("C:/Users/Francesco/Pictures/tele/inference_results/")
+save_path_results = os.path.join(save_path, name)
+conditionalMkDir(save_path_results)
 
-# pick some random samples
-fig, ax = plt.subplots(nrows=4, ncols=10, figsize=(14, 9), tight_layout=True)
+input_names = np.array(sorted(os.listdir(os.path.join(ds_path, "tiles"))))
 
-for i, a in enumerate(ax.reshape(-1)):
-    r = np.random.randint(0, len(reduced_ascores))
-    
-    a.imshow(all_inputs[r, :, :, :].detach().numpy().transpose(1,2,0))
-    a.axis("off")
-    a.set_title(f"{reduced_ascores[r].detach().numpy():.3f}")
+input_images = all_inputs.detach().numpy().transpose(0,2,3,1)
+input_images = np.clip(input_images*25 + 128, 0, 255).astype(int)
 
-plt.show()
+output_scores = reduced_ascores.detach().numpy()
+
+# plot anomaly 
+plt.hist(np.clip(output_scores, 0, 10), 50, (-1,11))
+plt.yscale("log")
+plt.title("Anomaly scores")
+plt.savefig(os.path.join(save_path_results, "anomaly_scores_hist.png"))
+
+# threshold anomalies
+print("input a threshold value (press enter to confirm):")
+thresh = float(input())
+mask_thresh = output_scores > thresh
+
+print(np.sum(mask_thresh))
+
+Tscores = output_scores[mask_thresh]
+Timages = input_images[mask_thresh]
+Tnames = input_names[mask_thresh]
+
+# Create figure and draw rectangles
+import cv2 as cv
+
+# image
+CVimage = np.array(image[:,:,0])
+
+for i, n in enumerate(Tnames):
+    # fetch coordinates from file name
+    c = np.array(n.split("(")[1].split(")")[0].split("-")).astype(float)
+    # draw rectangle
+    topleft = (int(c[0])-224//2, int(c[1])-224//2)
+    bottomright = (int(c[0])+224//2, int(c[1])+224//2)
+    cv.rectangle(CVimage, topleft, bottomright,(0,0,0),3)
+    cv.putText(CVimage, f"{Tscores[i]:.5f}", (topleft[0]+5, topleft[1]-5), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
+
+# save image to file
+cv.imwrite(os.path.join(save_path_results, "image.png"), CVimage)
