@@ -102,7 +102,7 @@ def tileImage(image: np.array,
                                        normalize = normalize,
                                        gauss_blur = gauss_blur)
     
-    return np.array(tiles_set), np.array(centers_set)
+    return np.array(tiles_set[:,:,:,0]), np.array(centers_set)
 
 
 def saveCrops(save_to, crops_set, centers_set, prefix):
