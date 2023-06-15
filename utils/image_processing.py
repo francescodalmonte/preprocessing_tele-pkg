@@ -40,7 +40,10 @@ def cropImage(image: np.array,
 
     Parameters
     ----------
-    image: image to be cropped (2 channels: image + binary mask).
+    image: image to be cropped
+           (may have 1 or 2 channels. In the latter case, the second channel is 
+           supposed to represent the anomaly binary mask, and its crops are returned
+           as well).
     centers: set of centers coordinates of the crops.
     size: side length of the crop (pixels. Default = 224)
     rand_shift: perform random shift of the centers (default = False).
@@ -64,18 +67,33 @@ def cropImage(image: np.array,
         crop = np.array(image[y-l : y+l, x-l : x+l])
         if rand_flip : crop = randomFlip(crop) 
 
-        if crop.shape[:2] == (size, size):
-            
-            if gauss_blur is not None:
-                # gaussian blurring
-                crop[:,:,0] = gaussian_filter(crop[:,:,0], sigma = gauss_blur)
+        if len(crop.shape) == 3: # images WITH binary mask case
+            if crop.shape[:2] == (size, size):
+                
+                if gauss_blur is not None:
+                    # gaussian blurring
+                    crop[:,:,0] = gaussian_filter(crop[:,:,0], sigma = gauss_blur)
 
-            if normalize:
-                # normalization at single crop level
-                crop[:,:,0] = (crop[:,:,0] - np.mean(crop[:,:,0])) + 128
+                if normalize:
+                    # normalization at single crop level
+                    crop[:,:,0] = (crop[:,:,0] - np.mean(crop[:,:,0])) + 128
 
-            crops_set.append(crop)
-            centers_set.append([x, y])
+                crops_set.append(crop)
+                centers_set.append([x, y])
+
+        if len(crop.shape) == 2: # images WITHOUT binary mask case
+            if crop.shape == (size, size):
+                
+                if gauss_blur is not None:
+                    # gaussian blurring
+                    crop = gaussian_filter(crop, sigma = gauss_blur)
+
+                if normalize:
+                    # normalization at single crop level
+                    crop = (crop - np.mean(crop)) + 128
+
+                crops_set.append(crop)
+                centers_set.append([x, y])
 
     return np.array(crops_set), np.array(centers_set)
 
@@ -88,7 +106,7 @@ def tileImage(image: np.array,
     """
     Create a regular tiling of an image (uses: cropImage function).
     """
-    imshape = np.shape(image)[:2]
+    imshape = np.shape(image)
     y = np.arange(size//2 + 1, imshape[0] - size//2 - 1, size - overlap)
     x = np.arange(size//2 + 1, imshape[1] - size//2 - 1, size - overlap)
     grid = np.meshgrid(x, y)
@@ -102,7 +120,7 @@ def tileImage(image: np.array,
                                        normalize = normalize,
                                        gauss_blur = gauss_blur)
     
-    return np.array(tiles_set[:,:,:,0]), np.array(centers_set)
+    return np.array(tiles_set[:,:,:]), np.array(centers_set)
 
 
 def saveCrops(save_to, crops_set, centers_set, prefix):

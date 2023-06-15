@@ -42,7 +42,6 @@ def tile_input_image(name: str,
                      ):
     object = multiChannelImage(name, root_path)
     image = object.__get_diffImage__()
-    image = np.stack((image, np.zeros_like(image)), axis = 2)
 
     tiles, coords = tileImage(image, size, overlap, gauss_blur = .8)
     tiles = np.stack((tiles, tiles, tiles)).transpose(1,2,3,0)
