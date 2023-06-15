@@ -98,10 +98,14 @@ class multiChannelImage():
 
 
 
-    def fetch_goodCrops(self, N, scale = 1., size = 224,
+    def fetch_goodCrops(self,
+                        N,
+                        scale = 1.,
+                        size = 224,
                         rand_flip = False,
                         normalize = True,
-                        gauss_blur = None):
+                        gauss_blur = None,
+                        mode = "diff"):
         """
         Create a set of good crops using randomly generated coordinates.
         (This method is based on the cropImage() function).
@@ -116,8 +120,13 @@ class multiChannelImage():
         """
 
         # images
-        image = self.__get_diffImage__(scale = scale)
-
+        if mode == "diff":
+            image = self.__get_diffImage__(scale = scale)
+        elif mode in [0,1,2,3,4]:
+            image = self.__get_images__(scale = scale)[mode]
+        else:
+            raise(ValueError("Invalid argument: mode"))
+        
         # crops coordinates
         mask = self.__get_goodMask__(scale = scale, size = size)
         centers = self.__get_randomCenters__(mask, N = N)
@@ -141,7 +150,8 @@ class multiChannelImage():
                              rand_shift = False,
                              rand_flip = False,
                              gauss_blur = None,
-                             normalize = True
+                             normalize = True,
+                             mode = "diff"
                              ):
         """
         Create a set of anomalous crops using the coordinates from the metadata file.
@@ -157,11 +167,16 @@ class multiChannelImage():
         """
 
         # images
-        image = self.__get_diffImage__(scale = scale)
+        if mode == "diff":
+            image = self.__get_diffImage__(scale = scale)
+        elif mode in [0,1,2,3,4]:
+            image = self.__get_images__(scale = scale)[mode]
+        else:
+            raise(ValueError("Invalid argument: mode"))
 
         # crops coordinates
         centers, _ = self.__get_metadata__(scale = scale)
-        centers = centers[centers[:,4]<3] 
+        centers = centers[centers[:,4]<1] 
 
         # image for binary masks
         mask = self.__get_anomalousMask__(scale = scale)
