@@ -43,13 +43,15 @@ if __name__ == "__main__":
                                                                        rand_flip = True,
                                                                        rand_shift = True,
                                                                        normalize = True,
-                                                                       gauss_blur = .8
+                                                                       gauss_blur = .8,
+                                                                       mode = "diff"
                                                                        )
         goodCrops, goodCenters = object.fetch_goodCrops(scale = float(config['SCALE']),
                                                         N = int(config['N_GOOD']),
                                                         rand_flip = True,
                                                         normalize = True,
-                                                        gauss_blur = .8
+                                                        gauss_blur = .8,
+                                                        mode = "diff"
                                                         )
 
         print(f"N. anomalous/N. normal: {len(anomalousCrops)}/{len(goodCrops)}")

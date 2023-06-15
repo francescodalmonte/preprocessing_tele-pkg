@@ -123,7 +123,7 @@ def tileImage(image: np.array,
     return np.array(tiles_set[:,:,:]), np.array(centers_set)
 
 
-def saveCrops(save_to, crops_set, centers_set, prefix):
+def saveCrops(save_to, crops_set, centers_set, prefix = "", suffix = ""):
     """
     """
 
@@ -131,7 +131,7 @@ def saveCrops(save_to, crops_set, centers_set, prefix):
     assert len(crops_set)==len(centers_set), "len() of crops set not matching centers set"
 
     for crop, coords in zip(crops_set, centers_set):
-        filename = prefix + f"C({coords[0]}-{coords[1]}).png"
+        filename = prefix + f"C({coords[0]}-{coords[1]})" + suffix + ".png" 
         path = os.path.join(save_to, filename)
         
         img = np.array([crop, crop, crop]).transpose(1,2,0)

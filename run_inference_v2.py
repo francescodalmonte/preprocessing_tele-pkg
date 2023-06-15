@@ -237,7 +237,7 @@ if __name__ == "__main__":
                              anomaly_scores_set,
                              os.path.join(config["SAVE_PATH"], "anomaly_heatmap.png"))
         
-        save_annotated_image(image[:,:,0],
+        save_annotated_image(image,
                              coords_set,
                              anomaly_scores_set,
                              os.path.join(config["SAVE_PATH"], "annotated_image.png"))
