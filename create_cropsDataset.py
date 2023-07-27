@@ -40,6 +40,7 @@ if __name__ == "__main__":
 
         # extract crops
         anomalousCrops, anomalousCenters = object.fetch_anomalousCrops(scale = float(config['SCALE']),
+                                                                       size = float(config['SIZE']),
                                                                        rand_flip = True,
                                                                        rand_shift = True,
                                                                        normalize = True,
@@ -47,6 +48,7 @@ if __name__ == "__main__":
                                                                        mode = "diff"
                                                                        )
         goodCrops, goodCenters = object.fetch_goodCrops(scale = float(config['SCALE']),
+                                                        size = float(config['SIZE']),
                                                         N = int(config['N_GOOD']),
                                                         rand_flip = True,
                                                         normalize = True,
