@@ -24,13 +24,14 @@ from fcdd.training.fcdd import FCDDTrainer
 
 
 config = {"INPUT_NAME": "F00000042.Presley-Jetblack_D20210908-160156",
-          "INPUT_PATH": "C:/Users/Francesco/Pictures/tele/raw",
-          "SNAPSHOT": "D:/Users/Francesco/phd/FCDD results/supervised (with masks)/10 epochs/normal_0/it_0/snapshot.pt",
-          "SAVE_PATH": "C:/Users/Francesco/Pictures/tele/inference_results/",
+          "INPUT_PATH": "D:/data/dataset_tele_SUB",
+          "SNAPSHOT": "D:/code/fcdd-windows/data/results/fcdd_20230727143640_custom_/normal_0/it_0/snapshot.pt",
+          "SAVE_PATH": "D:/data/inference_results",
           "SIZE": 224,
-          "OVERLAP": 30,
-          "DEVICE": "cpu",
-          "NORMALIZE": [0.5, 0.0368] # cpu or cuda
+          "OVERLAP": 105,
+          "BATCH_SIZE": 80,
+          "DEVICE": "cuda", # cpu or cuda
+          "NORMALIZE": [0.5, 0.0368]
           }
 
 
@@ -54,8 +55,9 @@ def setup_model(snapshot: str,
                 device: str, 
                 size: int = 224
                 ):
+    print("Setting up model")
     model = FCDD_CNN224_VGG_F((3, size, size),
-                              bias = True)
+                              bias = True).to(device)
     snapshot = torch.load(snapshot, map_location=torch.device(device))
     model.load_state_dict(snapshot["net"])
     return model
@@ -63,6 +65,7 @@ def setup_model(snapshot: str,
 def setup_trainer(model,
                   size
                   ):
+    print("Setting up trainer")
     trainer = FCDDTrainer(model, None, None, (None, None), None, 'fcdd', 8, 0.97, size)
     trainer.net.eval()
     return trainer
@@ -93,17 +96,18 @@ class CustomDataset(Dataset):
 
 def setup_dataloader(tiles: List[np.ndarray],
                      coords: List[float],
+                     batch_size: int = 1,
                      M: float = 0.5000,
                      S: float = 0.0368
                      ):
-    
+    print("Setting up dataloader")
     transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((M,M,M), (S,S,S))
             ])
     
     ds = CustomDataset(tiles, coords, transform)
-    dl = DataLoader(ds, batch_size=1, num_workers=0)
+    dl = DataLoader(ds, batch_size=batch_size, num_workers=0)
 
     return dl
 
@@ -127,8 +131,8 @@ def save_anomaly_heatmap(coords_set: np.ndarray,
                                    len(np.unique(coords_set[:,0])))
         
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(8,12), dpi=600)
-    ax[0].imshow(image[:,:,0]); ax[0].axis("off")
-    ax[1].imshow(np.sqrt(h)); ax[1].axis("off")
+    ax[0].imshow(h); ax[0].set_title("Anomaly scores")
+    ax[1].imshow(np.sqrt(h)); ax[1].set_title("Anomaly scores (sqrt)")
     
     plt.savefig(save_path)
 
@@ -144,7 +148,7 @@ def save_annotated_image(image: np.ndarray,
     CVimage = np.array(np.stack((image, image, image)).transpose(1,2,0)).copy()
 
     # threshold mask
-    m = anomaly_scores_set > 0.1
+    m = anomaly_scores_set > 0.05
 
     for c, s in zip(coords_set[m], anomaly_scores_set[m]):
         # draw rectangle
@@ -181,6 +185,7 @@ if __name__ == "__main__":
         
         dl = setup_dataloader(tiles,
                               coords,
+                              config["BATCH_SIZE"],
                               config["NORMALIZE"][0],
                               config["NORMALIZE"][1])
         
@@ -199,21 +204,27 @@ if __name__ == "__main__":
         for i, (input, y, coords) in enumerate(dl):
             if i%10==0: print(f"processing {i}/{len(dl)}")
             with torch.no_grad():
-                out = trainer.net(input.float())
+
+                out = trainer.net(input.float().to(config["DEVICE"]))
+
                 anomaly_map = trainer.anomaly_score(trainer.loss(out, input, y, reduce='none'))
                 anomaly_map = trainer.net.receptive_upsample(anomaly_map, reception=True, std=8, cpu=False)
                 anomaly_score = trainer.reduce_ascore(anomaly_map)
 
-                inputs_set.append(input.detach().numpy()[0,0,:,:])
-                coords_set.append(coords.detach().numpy()[0])
-                anomaly_maps_set.append(anomaly_map.detach().numpy()[0,0,:,:])
-                anomaly_scores_set.append(anomaly_score.detach().numpy()[0])
+                inputs_set.append(input.detach().numpy()[:,0,:,:])
+                coords_set.append(coords.detach().numpy()[:])
+                anomaly_maps_set.append(anomaly_map.cpu().detach().numpy()[:,0,:,:])
+                anomaly_scores_set.append(anomaly_score.cpu().detach().numpy()[:])
+
+        inputs_set = np.concatenate(inputs_set, axis=0)
+        coords_set = np.concatenate(coords_set, axis=0)
+        anomaly_maps_set = np.concatenate(anomaly_maps_set, axis=0)
+        anomaly_scores_set = np.concatenate(anomaly_scores_set, axis=0)
 
         inputs_set = np.array(inputs_set)
         coords_set = np.array(coords_set)
         anomaly_maps_set = np.array(anomaly_maps_set)
         anomaly_scores_set = np.array(anomaly_scores_set)
-
 
         # SAVE RESULTS
 
@@ -229,7 +240,6 @@ if __name__ == "__main__":
         anoamly_maps_set = np.load(os.path.join(config["SAVE_PATH"], "anomaly_maps_set.npy"))
         anomaly_scores_set = np.load(os.path.join(config["SAVE_PATH"], "anomaly_scores_set.npy"))
         """
-        
         save_anomaly_hist(anomaly_scores_set,
                           os.path.join(config["SAVE_PATH"], "anomaly_hist.png"))
 
