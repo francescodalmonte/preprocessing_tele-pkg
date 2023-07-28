@@ -28,7 +28,7 @@ config = {"INPUT_NAME": "F00000042.Presley-Jetblack_D20210908-160156",
           "SNAPSHOT": "D:/code/fcdd-windows/data/results/fcdd_20230727143640_custom_/normal_0/it_0/snapshot.pt",
           "SAVE_PATH": "D:/data/inference_results",
           "SIZE": 224,
-          "OVERLAP": 105,
+          "OVERLAP": 165,
           "BATCH_SIZE": 80,
           "DEVICE": "cuda", # cpu or cuda
           "NORMALIZE": [0.5, 0.0368]
@@ -41,6 +41,7 @@ def tile_input_image(name: str,
                      size: int = 224, 
                      overlap: int = 0
                      ):
+    print("Tiling image")
     object = multiChannelImage(name, root_path)
     image = object.__get_diffImage__()
 
@@ -211,28 +212,28 @@ if __name__ == "__main__":
                 anomaly_map = trainer.net.receptive_upsample(anomaly_map, reception=True, std=8, cpu=False)
                 anomaly_score = trainer.reduce_ascore(anomaly_map)
 
-                inputs_set.append(input.detach().numpy()[:,0,:,:])
+                #inputs_set.append(input.detach().numpy()[:,0,:,:])
                 coords_set.append(coords.detach().numpy()[:])
-                anomaly_maps_set.append(anomaly_map.cpu().detach().numpy()[:,0,:,:])
+                #anomaly_maps_set.append(anomaly_map.cpu().detach().numpy()[:,0,:,:])
                 anomaly_scores_set.append(anomaly_score.cpu().detach().numpy()[:])
 
-        inputs_set = np.concatenate(inputs_set, axis=0)
+        #inputs_set = np.concatenate(inputs_set, axis=0)
         coords_set = np.concatenate(coords_set, axis=0)
-        anomaly_maps_set = np.concatenate(anomaly_maps_set, axis=0)
+        #anomaly_maps_set = np.concatenate(anomaly_maps_set, axis=0)
         anomaly_scores_set = np.concatenate(anomaly_scores_set, axis=0)
 
-        inputs_set = np.array(inputs_set)
+        #inputs_set = np.array(inputs_set)
         coords_set = np.array(coords_set)
-        anomaly_maps_set = np.array(anomaly_maps_set)
+        #anomaly_maps_set = np.array(anomaly_maps_set)
         anomaly_scores_set = np.array(anomaly_scores_set)
 
         # SAVE RESULTS
 
         conditionalMkDir(config["SAVE_PATH"])
 
-        np.save(os.path.join(config["SAVE_PATH"], "inputs_set.npy"), inputs_set)
+        #np.save(os.path.join(config["SAVE_PATH"], "inputs_set.npy"), inputs_set)
         np.save(os.path.join(config["SAVE_PATH"], "coords_set.npy"), coords_set)
-        np.save(os.path.join(config["SAVE_PATH"], "anomaly_maps_set.npy"), anomaly_maps_set)
+        #np.save(os.path.join(config["SAVE_PATH"], "anomaly_maps_set.npy"), anomaly_maps_set)
         np.save(os.path.join(config["SAVE_PATH"], "anomaly_scores_set.npy"), anomaly_scores_set)
         """
         inputs_set = np.load(os.path.join(config["SAVE_PATH"], "inputs_set.npy"))

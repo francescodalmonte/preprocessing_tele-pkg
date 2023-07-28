@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.patches as patches
 from matplotlib import pyplot as plt
 
-from utils.multiChannelImage import multiChannelImage
+from preprocessing_tele.multiChannelImage import multiChannelImage
 
 #####################################################################
 #                                                                   #
@@ -25,7 +25,7 @@ def draw_ROIs(mcImage, axis):
     centers, _ = mcImage.__get_metadata__(scale = 1.)
 
     # get image
-    image = mcImage.__get_diffImage()
+    image = mcImage.__get_diffImage__()
 
     # draw
     axis.imshow(image, cmap="Greys")

@@ -8,9 +8,9 @@ import os
 from matplotlib import pyplot as plt
 from matplotlib import patches as patches
 
-from utils.dataset import conditionalMkDir
-from utils.multiChannelImage import multiChannelImage
-from utils.image_processing import tileImage, saveCrops
+from preprocessing_tele.dataset import conditionalMkDir
+from preprocessing_tele.multiChannelImage import multiChannelImage
+from preprocessing_tele.image_processing import tileImage, saveCrops
 
 
 # TILE INPUT IMAGE

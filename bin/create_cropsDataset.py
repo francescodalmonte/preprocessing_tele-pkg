@@ -3,10 +3,10 @@ import os
 import time
 import configparser
 
-from utils.multiChannelImage import multiChannelImage
-from utils.IO import listRawDir
-from utils.image_processing import saveCrops
-from utils.dataset import mkDirTreeFCDD, randomSplit
+from preprocessing_tele.multiChannelImage import multiChannelImage
+from preprocessing_tele.IO import listRawDir
+from preprocessing_tele.image_processing import saveCrops
+from preprocessing_tele.dataset import mkDirTreeFCDD, randomSplit
 
 
 def setupArgs():
