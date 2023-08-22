@@ -27,12 +27,15 @@ class multiChannelImage():
                              scale=scale,
                              suffix = "bmp")
 
-    def __get_diffImage__(self, scale: float = 1, suffix: str = "bmp"):
+    def __get_diffImage__(self, scale: float = 1,
+                          suffix: str = "bmp",
+                          minuend = 3,
+                          subtrahend = 2):
         """
         Read raw images and return grazing lights difference image.
         """
         imgs = self.__get_images__(scale = scale)
-        diffImage = imgs[3].astype(float) - imgs[2].astype(float)
+        diffImage = imgs[minuend].astype(float) - imgs[subtrahend].astype(float)
         diffImage = (diffImage + 128.).astype(int)
         return diffImage
 
