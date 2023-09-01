@@ -4,7 +4,7 @@ import time
 import configparser
 
 from preprocessing_tele.multiChannelImage import multiChannelImage
-from preprocessing_tele.IO import listRawDir
+from preprocessing_tele.IO import listRawDir, saveInfo
 from preprocessing_tele.image_processing import saveCrops
 from preprocessing_tele.dataset import mkDirTreeFCDD, randomSplit
 
@@ -43,16 +43,16 @@ if __name__ == "__main__":
                                                                        size = float(config['SIZE']),
                                                                        rand_flip = True,
                                                                        rand_shift = True,
-                                                                       normalize = True,
-                                                                       gauss_blur = .8,
+                                                                       normalize = bool(int(config["NORMALIZE_CROPS"])),
+                                                                       gauss_blur = float(config['GAUSS_BLUR']),
                                                                        mode = "diff"
                                                                        )
         goodCrops, goodCenters = object.fetch_goodCrops(scale = float(config['SCALE']),
                                                         size = float(config['SIZE']),
                                                         N = int(config['N_GOOD']),
                                                         rand_flip = True,
-                                                        normalize = True,
-                                                        gauss_blur = .8,
+                                                        normalize = bool(int(config["NORMALIZE_CROPS"])),
+                                                        gauss_blur = float(config['GAUSS_BLUR']),
                                                         mode = "diff"
                                                         )
 
@@ -82,5 +82,8 @@ if __name__ == "__main__":
     randomSplit(config['SAVE_ROOT'],
                 p_good = float(config['P_GOOD']),
                 p_anom = float(config['P_ANOM']))
+
+    # save .txt info file
+    saveInfo(config, config['SAVE_ROOT'])
 
     print(f"Elapsed time: {(time.time()-start):2f} s")

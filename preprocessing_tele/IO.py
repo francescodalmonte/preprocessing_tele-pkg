@@ -123,3 +123,13 @@ def listRawDir(path: str) -> List[str]:
             names.append(f.rsplit(".", 1)[-2])
 
     return names
+
+
+def saveInfo(config: dict,
+              save_path: str):
+    """Save dataset info to .txt file.
+    """
+    file_path = os.path.join(save_path, "info.txt")
+    with open(file_path,"w") as file:
+        for k in config.keys():
+            file.write(k + " >>> " + str(config[k]) + "\n")
