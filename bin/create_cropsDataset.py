@@ -45,7 +45,8 @@ if __name__ == "__main__":
                                                                        rand_shift = True,
                                                                        normalize = bool(int(config["NORMALIZE_CROPS"])),
                                                                        gauss_blur = float(config['GAUSS_BLUR']),
-                                                                       mode = "diff"
+                                                                       mode = config['MODE'],
+                                                                       min_defect_area = int(config['MIN_DEFECT_AREA'])
                                                                        )
         goodCrops, goodCenters = object.fetch_goodCrops(scale = float(config['SCALE']),
                                                         size = float(config['SIZE']),
@@ -53,7 +54,7 @@ if __name__ == "__main__":
                                                         rand_flip = True,
                                                         normalize = bool(int(config["NORMALIZE_CROPS"])),
                                                         gauss_blur = float(config['GAUSS_BLUR']),
-                                                        mode = "diff"
+                                                        mode = config['MODE']
                                                         )
 
         print(f"N. anomalous/N. normal: {len(anomalousCrops)}/{len(goodCrops)}")

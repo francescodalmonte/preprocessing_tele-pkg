@@ -34,7 +34,8 @@ def cropImage(image: np.array,
               rand_shift: bool = False,
               rand_flip: bool = False,
               normalize: bool = True,
-              gauss_blur: float = None) -> np.array:
+              gauss_blur: float = None,
+              min_area: int = -1) -> np.array:
     """
     Returns a set of fixed-size square crops of an input image.
 
@@ -50,6 +51,7 @@ def cropImage(image: np.array,
     rand_flip: perform random flip of the crops (default = False).
     normalize: whether to normalize or not the final crop (default = True).
     gauss_blur: size of gaussian blurring kernel (default = None, i.e. no blurring).
+    min_area: minimum defect area to include the crop (default = -1, i.e. all crops are included)
 
     Returns
     ----------
@@ -78,8 +80,10 @@ def cropImage(image: np.array,
                     # normalization at single crop level
                     crop[:,:,0] = (crop[:,:,0] - np.mean(crop[:,:,0])) + 128
 
-                crops_set.append(crop)
-                centers_set.append([x, y])
+                mask_area = np.sum(crop[:,:,1]>0)
+                if mask_area > min_area:
+                    crops_set.append(crop)
+                    centers_set.append([x, y])
 
         if len(crop.shape) == 2: # images WITHOUT binary mask case
             if crop.shape == (size, size):

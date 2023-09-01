@@ -125,8 +125,8 @@ class multiChannelImage():
         # images
         if mode == "diff":
             image = self.__get_diffImage__(scale = scale)
-        elif mode in [0,1,2,3,4]:
-            image = self.__get_images__(scale = scale)[mode]
+        elif mode in ["0", "1", "2", "3", "4"]:
+            image = self.__get_images__(scale = scale)[int(mode)]
         else:
             raise(ValueError("Invalid argument: mode"))
         
@@ -154,7 +154,8 @@ class multiChannelImage():
                              rand_flip = False,
                              gauss_blur = None,
                              normalize = True,
-                             mode = "diff"
+                             mode = "diff",
+                             min_defect_area = -1
                              ):
         """
         Create a set of anomalous crops using the coordinates from the metadata file.
@@ -172,8 +173,8 @@ class multiChannelImage():
         # images
         if mode == "diff":
             image = self.__get_diffImage__(scale = scale)
-        elif mode in [0,1,2,3,4]:
-            image = self.__get_images__(scale = scale)[mode]
+        elif mode in ["0", "1", "2", "3", "4"]:
+            image = self.__get_images__(scale = scale)[int(mode)]
         else:
             raise(ValueError("Invalid argument: mode"))
 
@@ -190,6 +191,7 @@ class multiChannelImage():
                                    rand_flip = rand_flip,
                                    rand_shift = rand_shift,
                                    normalize = normalize,
-                                   gauss_blur = gauss_blur)
+                                   gauss_blur = gauss_blur,
+                                   min_area = min_defect_area)
 
         return crops, centers
