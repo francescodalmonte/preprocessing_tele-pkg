@@ -72,9 +72,10 @@ def cropImage(image: np.array,
         if len(crop.shape) == 3: # images WITH binary mask case
             if crop.shape[:2] == (size, size):
                 
-                if gauss_blur is not None:
-                    # gaussian blurring
-                    crop[:,:,0] = gaussian_filter(crop[:,:,0], sigma = gauss_blur)
+                if gauss_blur is not None :
+                    if gauss_blur>0.:
+                        # gaussian blurring
+                        crop[:,:,0] = gaussian_filter(crop[:,:,0], sigma = gauss_blur)
 
                 if normalize:
                     # normalization at single crop level
@@ -89,8 +90,9 @@ def cropImage(image: np.array,
             if crop.shape == (size, size):
                 
                 if gauss_blur is not None:
-                    # gaussian blurring
-                    crop = gaussian_filter(crop, sigma = gauss_blur)
+                    if gauss_blur>0.:
+                        # gaussian blurring
+                        crop = gaussian_filter(crop, sigma = gauss_blur)
 
                 if normalize:
                     # normalization at single crop level
@@ -127,7 +129,37 @@ def tileImage(image: np.array,
     return np.array(tiles_set[:,:,:]), np.array(centers_set)
 
 
-def saveCrops(save_to, crops_set, centers_set, prefix = "", suffix = ""):
+
+def CLAHEtransformation(input: np.ndarray,
+                        **kwargs):
+    """
+    Apply Contrast Limited Adaptive Histogram Equalization tranform to 
+    an input single-channel image.
+    (https://en.wikipedia.org/wiki/Adaptive_histogram_equalization)
+
+    """
+    clahe = cv.createCLAHE(**kwargs)
+    return clahe.apply(input.astype(np.uint8))
+
+
+
+def CEtransformation(input: np.ndarray,
+                    kernel_size: list = [1, 7]):
+    """
+    Apply Contrast Enhancement transformation to an input single-channel image.
+    """
+    blur1 = cv.medianBlur(input.astype(np.uint8), kernel_size[0])
+    blur2 = cv.medianBlur(input.astype(np.uint8), kernel_size[1])
+
+    contrast = blur1.astype(float) - blur2.astype(float)
+    output = np.clip(input+contrast*2, 0, 255).astype(np.uint8)
+
+    return output
+
+
+
+
+def saveCrops(save_to, crops_set, centers_set, prefix = "", suffix = "", pseudoColor = False):
     """
     """
 
@@ -138,5 +170,14 @@ def saveCrops(save_to, crops_set, centers_set, prefix = "", suffix = ""):
         filename = prefix + f"C({coords[0]}-{coords[1]})" + suffix + ".png" 
         path = os.path.join(save_to, filename)
         
-        img = np.array([crop, crop, crop]).transpose(1,2,0)
+        if pseudoColor:
+            ch1 = crop
+            ch2 = CLAHEtransformation(crop, clipLimit=3.0, tileGridSize=(5,5))
+            ch3 = CLAHEtransformation(crop, clipLimit=3.0, tileGridSize=(8,8))
+        else:
+            ch1 = crop
+            ch2 = crop
+            ch3 = crop
+
+        img = np.array([ch1, ch2, ch3]).transpose(1,2,0)
         cv.imwrite(path, img)

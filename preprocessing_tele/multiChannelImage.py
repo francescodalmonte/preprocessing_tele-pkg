@@ -47,8 +47,10 @@ class multiChannelImage():
         """
         Read binary anomaly mask from file.
         """
-
-        return read_singleImage(self.maskPath, scale = scale)
+        mask = read_singleImage(self.maskPath, scale = scale)
+        mask[mask<128] = 0
+        mask[mask>=128] = 255
+        return mask
 
     def __get_goodMask__(self, scale: float = 1., size: int = 224):
         """
