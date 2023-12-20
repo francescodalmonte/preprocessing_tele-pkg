@@ -3,6 +3,7 @@
 import os 
 import numpy as np
 import cv2 as cv
+import json
 
 from .IO import read_dirImage, read_metadataFile, read_singleImage
 from .image_processing import randomFlip, randomShift, cropImage
@@ -17,6 +18,14 @@ class multiChannelImage():
         self.imdirPath = os.path.join(rootpath, name + ".obj")
         self.metadataPath = os.path.join(rootpath, name + ".dat")
         self.maskPath = os.path.join(rootpath, name + "_M.png")
+        self.alignmentPath = os.path.join(rootpath, self.imdirPath + "/allignment.txt")
+
+    def __get_alignmentData__(self, scale: float = 1.):
+        with open(self.alignmentPath) as file:
+            alignDict = json.load(file)
+        for k in alignDict.keys():
+            alignDict[k]*=scale
+        return alignDict
 
 
     def __get_images__(self, scale: float = 1, suffix: str = "bmp"):
@@ -36,21 +45,25 @@ class multiChannelImage():
         """
         imgs = self.__get_images__(scale = scale)
         diffImage = imgs[minuend].astype(float) - imgs[subtrahend].astype(float)
-        diffImage = (diffImage + 128.).astype(int)
+        diffImage = (diffImage*0.65 + 128.).astype(int)
         return diffImage
 
-    def __get_metadata__(self, scale: float = 1):
+    def __get_metadata__(self, scale: float = 1.):
         return read_metadataFile(self.metadataPath,
                                  scale=scale)
 
-    def __get_anomalousMask__(self, scale: float = 1):
+    def __get_anomalousMask__(self, scale: float = 1.):
         """
         Read binary anomaly mask from file.
         """
-        mask = read_singleImage(self.maskPath, scale = scale)
-        mask[mask<128] = 0
-        mask[mask>=128] = 255
-        return mask
+        if not os.path.isfile(self.maskPath):   
+            return None
+        else:
+            mask = read_singleImage(self.maskPath, scale = scale)
+            mask[mask<128] = 0
+            mask[mask>=128] = 255
+            return mask
+        
 
     def __get_goodMask__(self, scale: float = 1., size: int = 224):
         """
@@ -102,6 +115,19 @@ class multiChannelImage():
         return padded.astype(int)
 
 
+    def __get_allignedRegionMask__(self, region_mask_path, scale = 1.):
+        region_mask = read_singleImage(region_mask_path, scale = scale)
+        region_mask[region_mask<128] = 0
+        region_mask[region_mask>=128] = 1
+
+        # transform the region mask according to alignment info
+        align = self.__get_alignmentData__(scale = scale)
+        M = np.float32([[1, 0, -align["x"]], [0, 1, -align["y"]]])
+        region_mask = cv.warpAffine(region_mask, M, region_mask.shape[::-1])
+
+        return region_mask
+
+
 
     def fetch_goodCrops(self,
                         N,
@@ -110,7 +136,11 @@ class multiChannelImage():
                         rand_flip = False,
                         normalize = True,
                         gauss_blur = None,
-                        mode = "diff"):
+                        mode = "diff",
+                        minuend = 3,
+                        subtrahend = 2,
+                        region_mask_path = None
+                        ):
         """
         Create a set of good crops using randomly generated coordinates.
         (This method is based on the cropImage() function).
@@ -126,7 +156,7 @@ class multiChannelImage():
 
         # images
         if mode == "diff":
-            image = self.__get_diffImage__(scale = scale)
+            image = self.__get_diffImage__(scale = scale, minuend = minuend, subtrahend = subtrahend)
         elif mode in ["0", "1", "2", "3", "4"]:
             image = self.__get_images__(scale = scale)[int(mode)]
         else:
@@ -134,10 +164,20 @@ class multiChannelImage():
         
         # crops coordinates
         mask = self.__get_goodMask__(scale = scale, size = size)
+        # regions restriction
+        if region_mask_path is not None:
+            # get region mask (with correct allignment)
+            region_mask = self.__get_allignedRegionMask__(region_mask_path, scale=scale)
+            # combine good mask with the regions restrictions
+            mask = mask*region_mask
+
+
         centers = self.__get_randomCenters__(mask, N = N)
 
         # image for binary masks
         mask = self.__get_anomalousMask__(scale = scale)
+        if mask is None: # create a zeros mask if mask file does not exists
+            mask = np.zeros_like(image) 
         image = np.stack((image, mask), axis = 2)
 
         # run cropImage()
@@ -151,13 +191,18 @@ class multiChannelImage():
 
 
 
+
+
     def fetch_anomalousCrops(self, scale = 1., size = 224,
                              rand_shift = False,
                              rand_flip = False,
                              gauss_blur = None,
                              normalize = True,
                              mode = "diff",
-                             min_defect_area = -1
+                             minuend = 3,
+                             subtrahend = 2,
+                             min_defect_area = -1,
+                             region_mask_path = None
                              ):
         """
         Create a set of anomalous crops using the coordinates from the metadata file.
@@ -172,28 +217,45 @@ class multiChannelImage():
 
         """
 
-        # images
-        if mode == "diff":
-            image = self.__get_diffImage__(scale = scale)
-        elif mode in ["0", "1", "2", "3", "4"]:
-            image = self.__get_images__(scale = scale)[int(mode)]
-        else:
-            raise(ValueError("Invalid argument: mode"))
-
         # crops coordinates
         centers, _ = self.__get_metadata__(scale = scale)
         centers = centers[centers[:,4]<1] 
 
-        # image for binary masks
-        mask = self.__get_anomalousMask__(scale = scale)
-        image = np.stack((image, mask), axis = 2)
+        # regions restriction
+        if region_mask_path is not None:
+            # get region mask (with correct allignment)
+            region_mask = self.__get_allignedRegionMask__(region_mask_path, scale=scale)
+            centers = [c for c in centers[:,:2] if region_mask[c[1], c[0]]==1]
 
-        # run cropImage()
-        crops, centers = cropImage(image, centers, size = size,
-                                   rand_flip = rand_flip,
-                                   rand_shift = rand_shift,
-                                   normalize = normalize,
-                                   gauss_blur = gauss_blur,
-                                   min_area = min_defect_area)
+
+        if len(centers)>0:
+            # images
+            if mode == "diff":
+                image = self.__get_diffImage__(scale = scale, minuend = minuend, subtrahend = subtrahend)
+            elif mode in ["0", "1", "2", "3", "4"]:
+                image = self.__get_images__(scale = scale)[int(mode)]
+            else:
+                raise(ValueError("Invalid argument: mode"))
+
+
+
+
+            # image for binary masks
+            mask = self.__get_anomalousMask__(scale = scale)
+            if mask is None: # create a zeros mask if mask file does not exists
+                mask = np.zeros_like(image)
+            image = np.stack((image, mask), axis = 2)
+
+            # run cropImage()
+            crops, centers = cropImage(image, centers, size = size,
+                                    rand_flip = rand_flip,
+                                    rand_shift = rand_shift,
+                                    normalize = normalize,
+                                    gauss_blur = gauss_blur,
+                                    min_area = min_defect_area)
+
+        else:
+            crops = []
+            centers = []
 
         return crops, centers

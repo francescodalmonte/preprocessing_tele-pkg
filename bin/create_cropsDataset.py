@@ -41,12 +41,15 @@ if __name__ == "__main__":
         # extract crops
         anomalousCrops, anomalousCenters = object.fetch_anomalousCrops(scale = float(config['SCALE']),
                                                                        size = float(config['SIZE']),
-                                                                       rand_flip = True,
+                                                                       rand_flip = False,
                                                                        rand_shift = True,
                                                                        normalize = bool(int(config["NORMALIZE_CROPS"])),
                                                                        gauss_blur = float(config['GAUSS_BLUR']),
                                                                        mode = config['MODE'],
-                                                                       min_defect_area = int(config['MIN_DEFECT_AREA'])
+                                                                       minuend = int(config['DIFF_MINUEND']),
+                                                                       subtrahend = int(config['DIFF_SUBTRAHEND']),
+                                                                       min_defect_area = int(config['MIN_DEFECT_AREA']),
+                                                                       region_mask_path = os.path.join(config['SOURCE_ROOT'], "region_mask_3.bmp")
                                                                        )
         goodCrops, goodCenters = object.fetch_goodCrops(scale = float(config['SCALE']),
                                                         size = float(config['SIZE']),
@@ -54,7 +57,10 @@ if __name__ == "__main__":
                                                         rand_flip = True,
                                                         normalize = bool(int(config["NORMALIZE_CROPS"])),
                                                         gauss_blur = float(config['GAUSS_BLUR']),
-                                                        mode = config['MODE']
+                                                        mode = config['MODE'],
+                                                        minuend = int(config['DIFF_MINUEND']),
+                                                        subtrahend = int(config['DIFF_SUBTRAHEND']),
+                                                        region_mask_path = os.path.join(config['SOURCE_ROOT'], "region_mask_3_dilation.bmp")                                                     
                                                         )
 
         print(f"N. anomalous/N. normal: {len(anomalousCrops)}/{len(goodCrops)}")
@@ -68,7 +74,7 @@ if __name__ == "__main__":
                   ) 
 
 
-        if len(anomalousCrops>0):
+        if len(anomalousCrops)>0:
             saveCrops(os.path.join(config['SAVE_ROOT'], "custom/train/tele/anomalous"),
                       anomalousCrops[:,:,:,0],
                       anomalousCenters,
