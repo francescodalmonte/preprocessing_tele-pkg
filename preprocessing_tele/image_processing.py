@@ -159,7 +159,7 @@ def CEtransformation(input: np.ndarray,
 
 
 
-def saveCrops(save_to, crops_set, centers_set, prefix = "", suffix = "", pseudoColor = False):
+def saveCrops(save_to, crops_set, centers_set, prefix = "", suffix = "", mode = None):
     """
     """
 
@@ -170,14 +170,17 @@ def saveCrops(save_to, crops_set, centers_set, prefix = "", suffix = "", pseudoC
         filename = prefix + f"C({coords[0]}-{coords[1]})" + suffix + ".png" 
         path = os.path.join(save_to, filename)
         
-        if pseudoColor:
+        if mode == "pseudo_color":
             ch1 = crop
             ch2 = CLAHEtransformation(crop, clipLimit=3.0, tileGridSize=(5,5))
             ch3 = CLAHEtransformation(crop, clipLimit=3.0, tileGridSize=(8,8))
+            img = np.array([ch1, ch2, ch3]).transpose(1,2,0)
+        elif mode == "color_map":
+            img = cv.applyColorMap(crop, cv.COLORMAP_JET)
         else:
             ch1 = crop
             ch2 = crop
             ch3 = crop
-
-        img = np.array([ch1, ch2, ch3]).transpose(1,2,0)
+            img = np.array([ch1, ch2, ch3]).transpose(1,2,0)
+        
         cv.imwrite(path, img)

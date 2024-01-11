@@ -8,7 +8,8 @@ import cv2 as cv
 
 
 def read_singleImage(path: str,
-                     scale: float = 1.) -> np.array:
+                     scale: float = 1.,
+                     standardize: bool = False) -> np.array:
     """Read an image from file.
 
     Parameters
@@ -105,12 +106,14 @@ def read_metadataFile(path: str,
         
 
 
-def listRawDir(path: str) -> List[str]:
+def listRawDir(path: str,
+               exclusion: List[str,] = []) -> List[str]:
     """Returns a list of the raw images names in a directory.
 
     Parameters
     ----------
     path: absolute path to root directory.
+    exclusion: list of names to be excluded.
 
     Returns
     ----------
@@ -120,7 +123,9 @@ def listRawDir(path: str) -> List[str]:
     names = []
     for f in os.listdir(os.path.abspath(path)):
         if f.endswith(".obj"):
-            names.append(f.rsplit(".", 1)[-2])
+            n = f.rsplit(".", 1)[-2]
+            if n not in exclusion:
+                names.append(n)
 
     return names
 

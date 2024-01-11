@@ -6,7 +6,7 @@ import configparser
 from preprocessing_tele.multiChannelImage import multiChannelImage
 from preprocessing_tele.IO import listRawDir, saveInfo
 from preprocessing_tele.image_processing import saveCrops
-from preprocessing_tele.dataset import mkDirTreeFCDD, randomSplit
+from preprocessing_tele.dataset import mkDirTreeFCDD, randomSplit, randomSplit_byImage
 
 
 def setupArgs():
@@ -28,18 +28,27 @@ if __name__ == "__main__":
     start = time.time()
     np.random.seed(int(config['SEED']))
 
-    rawNames = listRawDir(config['SOURCE_ROOT'])
+    print(f"Loading raw images from {config['SOURCE_ROOT']}")
+    excluded = [n.strip() for n in config["EXCLUDED_NAMES"].split(",")]
+    print(f"Excluding images: {excluded}")
+
+    if len(config['REGION_MASK_PATH'])>0:
+        region_mask_path = config['REGION_MASK_PATH']
+        print(f"Using region mask: {region_mask_path}")
+    else: 
+        region_mask_path=None
+
+    rawNames = listRawDir(config['SOURCE_ROOT'], excluded)
     mkDirTreeFCDD(config['SAVE_ROOT'])    
     
-    print(f"Loading raw images from {config['SOURCE_ROOT']}")
 
     for name in rawNames:
-        object = multiChannelImage(name, config['SOURCE_ROOT'])
+        mcObject = multiChannelImage(name, config['SOURCE_ROOT'])
 
         print(f"{name}")
 
         # extract crops
-        anomalousCrops, anomalousCenters = object.fetch_anomalousCrops(scale = float(config['SCALE']),
+        anomalousCrops, anomalousCenters = mcObject.fetch_anomalousCrops(scale = float(config['SCALE']),
                                                                        size = float(config['SIZE']),
                                                                        rand_flip = False,
                                                                        rand_shift = True,
@@ -49,18 +58,18 @@ if __name__ == "__main__":
                                                                        minuend = int(config['DIFF_MINUEND']),
                                                                        subtrahend = int(config['DIFF_SUBTRAHEND']),
                                                                        min_defect_area = int(config['MIN_DEFECT_AREA']),
-                                                                       region_mask_path = os.path.join(config['SOURCE_ROOT'], "region_mask_3.bmp")
+                                                                       region_mask_path = region_mask_path
                                                                        )
-        goodCrops, goodCenters = object.fetch_goodCrops(scale = float(config['SCALE']),
+        goodCrops, goodCenters = mcObject.fetch_goodCrops(scale = float(config['SCALE']),
                                                         size = float(config['SIZE']),
                                                         N = int(config['N_GOOD']),
-                                                        rand_flip = True,
+                                                        rand_flip = False,
                                                         normalize = bool(int(config["NORMALIZE_CROPS"])),
                                                         gauss_blur = float(config['GAUSS_BLUR']),
                                                         mode = config['MODE'],
                                                         minuend = int(config['DIFF_MINUEND']),
                                                         subtrahend = int(config['DIFF_SUBTRAHEND']),
-                                                        region_mask_path = os.path.join(config['SOURCE_ROOT'], "region_mask_3_dilation.bmp")                                                     
+                                                        region_mask_path = region_mask_path                                                     
                                                         )
 
         print(f"N. anomalous/N. normal: {len(anomalousCrops)}/{len(goodCrops)}")
@@ -69,8 +78,7 @@ if __name__ == "__main__":
         saveCrops(os.path.join(config['SAVE_ROOT'], "custom/train/tele/normal"),
                   goodCrops[:,:,:,0],
                   goodCenters,
-                  prefix = name+"_",
-                  pseudoColor = False
+                  prefix = name+"_"
                   ) 
 
 
@@ -78,21 +86,22 @@ if __name__ == "__main__":
             saveCrops(os.path.join(config['SAVE_ROOT'], "custom/train/tele/anomalous"),
                       anomalousCrops[:,:,:,0],
                       anomalousCenters,
-                      prefix = name+"_",
-                      pseudoColor = False
+                      prefix = name+"_"
                       )
             saveCrops(os.path.join(config['SAVE_ROOT'], "custom/train_maps/tele/anomalous"),
                       anomalousCrops[:,:,:,1],
                       anomalousCenters,
-                      prefix = name+"_",
-                      pseudoColor = False
+                      prefix = name+"_"
                       )
         
 
     # split into train and test sets
-    randomSplit(config['SAVE_ROOT'],
-                p_good = float(config['P_GOOD']),
-                p_anom = float(config['P_ANOM']))
+    if bool(int(config["TEST_SPLIT_BY_IMAGE"])):
+        randomSplit_byImage(config['SAVE_ROOT'], config['TEST_IMAGES_NAMES'])
+    else:
+        randomSplit(config['SAVE_ROOT'],
+                    p_good = float(config['P_GOOD']),
+                    p_anom = float(config['P_ANOM']))
 
     # save .txt info file
     saveInfo(config, config['SAVE_ROOT'])

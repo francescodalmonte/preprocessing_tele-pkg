@@ -8,6 +8,9 @@ import json
 from .IO import read_dirImage, read_metadataFile, read_singleImage
 from .image_processing import randomFlip, randomShift, cropImage
 
+
+from matplotlib import pyplot as plt
+
 class multiChannelImage():
     """Base class for multichannel images"""
 
@@ -104,7 +107,6 @@ class multiChannelImage():
 
         """        
         all_coords = np.argwhere(mask) # list of (y, x) values
-
         idxs =  np.random.randint(0, len(all_coords), size=N)
         
         centers = all_coords[idxs][:, ::-1] # list of (x, y) values
@@ -257,5 +259,68 @@ class multiChannelImage():
         else:
             crops = []
             centers = []
+
+        return crops, centers
+    
+
+
+    def fetch_Bott(self,
+                   coords_file,
+                   scale = 1.,
+                   size = 600,
+                   rand_flip = False,
+                   normalize = True,
+                   gauss_blur = None,
+                   mode = "diff",
+                   minuend = 3,
+                   subtrahend = 2,
+                   align = True
+                   ):
+        """
+        Funzione per crop bottoni.
+
+        Parameters
+        ----------
+        N: number of crops to be fetched.
+
+        Returns
+        ----------
+
+        """
+
+        # images
+        if mode == "diff":
+            image = self.__get_diffImage__(scale = scale, minuend = minuend, subtrahend = subtrahend)
+        elif mode in ["0", "1", "2", "3", "4"]:
+            image = self.__get_images__(scale = scale)[int(mode)]
+        else:
+            raise(ValueError("Invalid argument: mode"))
+        
+        # crops coordinates
+        centers = []
+        with open(coords_file, 'r') as file:
+            for l in file.readlines():
+                cx, cy = l.split("\t")
+                cx, cy = int(cx.strip()), int(cy.strip())
+                centers.append([cx, cy, -1, -1, -1])
+        centers = np.asarray(centers)
+
+        if align:
+            alignment = self.__get_alignmentData__(scale = scale)
+            centers[:,0] -= int(alignment["x"])
+            centers[:,1] -= int(alignment["y"])
+
+        # image for binary masks
+        mask = self.__get_anomalousMask__(scale = scale)
+        if mask is None: # create a zeros mask if mask file does not exists
+            mask = np.zeros_like(image) 
+        image = np.stack((image, mask), axis = 2)
+
+        # run cropImage()
+        crops, centers = cropImage(image, centers, size = size,
+                                   rand_flip = rand_flip,
+                                   rand_shift = False,
+                                   normalize = normalize,
+                                   gauss_blur = gauss_blur)
 
         return crops, centers
