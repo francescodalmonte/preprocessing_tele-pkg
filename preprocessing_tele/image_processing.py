@@ -42,7 +42,7 @@ def cropImage(image: np.array,
     Parameters
     ----------
     image: image to be cropped
-           (may have 1 or 2 channels. In the latter case, the second channel is 
+           (may have 3 or 4 channels. In the latter case, the fourth channel is 
            supposed to represent the anomaly binary mask, and its crops are returned
            as well).
     centers: set of centers coordinates of the crops.
@@ -69,37 +69,23 @@ def cropImage(image: np.array,
         crop = np.array(image[y-l : y+l, x-l : x+l])
         if rand_flip : crop = randomFlip(crop) 
 
-        if len(crop.shape) == 3: # images WITH binary mask case
-            if crop.shape[:2] == (size, size):
-                
-                if gauss_blur is not None :
-                    if gauss_blur>0.:
-                        # gaussian blurring
-                        crop[:,:,0] = gaussian_filter(crop[:,:,0], sigma = gauss_blur)
+        if gauss_blur is not None :
+            if gauss_blur>0.:
+                # gaussian blurring
+                crop[:,:,:3] = gaussian_filter(crop[:,:,:3], sigma = gauss_blur, axes=(0,1))
 
-                if normalize:
-                    # normalization at single crop level
-                    crop[:,:,0] = (crop[:,:,0] - np.mean(crop[:,:,0])) + 128
+        if normalize:
+            # normalization at single crop level
+            crop[:,:,:3] = (crop[:,:,:3] - np.mean(crop[:,:,:3])) + 128
 
-                mask_area = np.sum(crop[:,:,1]>0)
-                if mask_area > min_area:
-                    crops_set.append(crop)
-                    centers_set.append([x, y])
-
-        if len(crop.shape) == 2: # images WITHOUT binary mask case
-            if crop.shape == (size, size):
-                
-                if gauss_blur is not None:
-                    if gauss_blur>0.:
-                        # gaussian blurring
-                        crop = gaussian_filter(crop, sigma = gauss_blur)
-
-                if normalize:
-                    # normalization at single crop level
-                    crop = (crop - np.mean(crop)) + 128
-
+        if crop.shape == (size, size, 4): # crops WITH mask
+            mask_area = np.sum(crop[:,:,3]>0)
+            if mask_area > min_area:
                 crops_set.append(crop)
                 centers_set.append([x, y])
+        elif crop.shape == (size, size, 3): # crops WITHOUT mask
+            crops_set.append(crop)
+            centers_set.append([x, y])
 
     return np.array(crops_set), np.array(centers_set)
 
@@ -161,6 +147,8 @@ def CEtransformation(input: np.ndarray,
 
 def saveCrops(save_to, crops_set, centers_set, prefix = "", suffix = "", mode = None):
     """
+    NB: for modes "pseudo_color" or "color_map" the crops are supposed to be grayscale
+    (i.e. 3 identical channels)
     """
 
     assert os.path.isdir(save_to), f"No dir found at {save_to}"
@@ -171,16 +159,13 @@ def saveCrops(save_to, crops_set, centers_set, prefix = "", suffix = "", mode = 
         path = os.path.join(save_to, filename)
         
         if mode == "pseudo_color":
-            ch1 = crop
-            ch2 = CLAHEtransformation(crop, clipLimit=3.0, tileGridSize=(5,5))
-            ch3 = CLAHEtransformation(crop, clipLimit=3.0, tileGridSize=(8,8))
+            ch1 = crop[:,:,0]
+            ch2 = CLAHEtransformation(ch1, clipLimit=3.0, tileGridSize=(5,5))
+            ch3 = CLAHEtransformation(ch1, clipLimit=3.0, tileGridSize=(8,8))
             img = np.array([ch1, ch2, ch3]).transpose(1,2,0)
         elif mode == "color_map":
-            img = cv.applyColorMap(crop, cv.COLORMAP_JET)
+            img = cv.applyColorMap(crop[:,:,0], cv.COLORMAP_JET)
         else:
-            ch1 = crop
-            ch2 = crop
-            ch3 = crop
-            img = np.array([ch1, ch2, ch3]).transpose(1,2,0)
+            img = crop
         
         cv.imwrite(path, img)

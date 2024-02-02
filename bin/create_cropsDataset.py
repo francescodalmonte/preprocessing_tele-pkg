@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
         # save to file
         saveCrops(os.path.join(config['SAVE_ROOT'], "custom/train/tele/normal"),
-                  goodCrops[:,:,:,0],
+                  goodCrops[:,:,:,:3],
                   goodCenters,
                   prefix = name+"_"
                   ) 
@@ -84,12 +84,12 @@ if __name__ == "__main__":
 
         if len(anomalousCrops)>0:
             saveCrops(os.path.join(config['SAVE_ROOT'], "custom/train/tele/anomalous"),
-                      anomalousCrops[:,:,:,0],
+                      anomalousCrops[:,:,:,:3],
                       anomalousCenters,
                       prefix = name+"_"
                       )
             saveCrops(os.path.join(config['SAVE_ROOT'], "custom/train_maps/tele/anomalous"),
-                      anomalousCrops[:,:,:,1],
+                      anomalousCrops[:,:,:,3],
                       anomalousCenters,
                       prefix = name+"_"
                       )

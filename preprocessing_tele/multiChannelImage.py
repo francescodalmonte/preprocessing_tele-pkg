@@ -130,6 +130,28 @@ class multiChannelImage():
         return region_mask
 
 
+    def image_mode_selector(self, mode, scale, minuend, subtrahend):
+        """
+        Function used inside fetch-functions to select the correct
+        image, according to "mode".
+        """
+
+        if mode == "diff":
+            im_channel = self.__get_diffImage__(scale = scale, minuend = minuend, subtrahend = subtrahend)
+            image = np.stack((im_channel, im_channel, im_channel), axis=2)
+        elif mode in ["0", "1", "2", "3", "4"]:
+            im_channel = self.__get_images__(scale = scale)[int(mode)]
+            image = np.stack((im_channel, im_channel, im_channel), axis=2)
+        elif mode == "custom_mix":
+            #single_lights = self.__get_images__(scale = scale)
+            diff_im1 = self.__get_diffImage__(scale = scale, minuend = 3, subtrahend = 0)
+            diff_im2 = self.__get_diffImage__(scale = scale, minuend = 2, subtrahend = 1)
+            image = np.stack((diff_im1, diff_im1, diff_im2), axis=2)
+        else:
+            raise(ValueError("Invalid argument: mode"))
+
+        return image
+
 
     def fetch_goodCrops(self,
                         N,
@@ -157,12 +179,7 @@ class multiChannelImage():
         """
 
         # images
-        if mode == "diff":
-            image = self.__get_diffImage__(scale = scale, minuend = minuend, subtrahend = subtrahend)
-        elif mode in ["0", "1", "2", "3", "4"]:
-            image = self.__get_images__(scale = scale)[int(mode)]
-        else:
-            raise(ValueError("Invalid argument: mode"))
+        image = self.image_mode_selector(mode, scale, minuend, subtrahend)
         
         # crops coordinates
         mask = self.__get_goodMask__(scale = scale, size = size)
@@ -180,7 +197,7 @@ class multiChannelImage():
         mask = self.__get_anomalousMask__(scale = scale)
         if mask is None: # create a zeros mask if mask file does not exists
             mask = np.zeros_like(image) 
-        image = np.stack((image, mask), axis = 2)
+        image = np.concatenate((image, np.expand_dims(mask, axis=2)), axis = 2)
 
         # run cropImage()
         crops, centers = cropImage(image, centers, size = size,
@@ -232,21 +249,14 @@ class multiChannelImage():
 
         if len(centers)>0:
             # images
-            if mode == "diff":
-                image = self.__get_diffImage__(scale = scale, minuend = minuend, subtrahend = subtrahend)
-            elif mode in ["0", "1", "2", "3", "4"]:
-                image = self.__get_images__(scale = scale)[int(mode)]
-            else:
-                raise(ValueError("Invalid argument: mode"))
-
-
+            image = self.image_mode_selector(mode, scale, minuend, subtrahend)
 
 
             # image for binary masks
             mask = self.__get_anomalousMask__(scale = scale)
             if mask is None: # create a zeros mask if mask file does not exists
                 mask = np.zeros_like(image)
-            image = np.stack((image, mask), axis = 2)
+            image = np.concatenate((image, np.expand_dims(mask, axis=2)), axis = 2)
 
             # run cropImage()
             crops, centers = cropImage(image, centers, size = size,
@@ -289,12 +299,7 @@ class multiChannelImage():
         """
 
         # images
-        if mode == "diff":
-            image = self.__get_diffImage__(scale = scale, minuend = minuend, subtrahend = subtrahend)
-        elif mode in ["0", "1", "2", "3", "4"]:
-            image = self.__get_images__(scale = scale)[int(mode)]
-        else:
-            raise(ValueError("Invalid argument: mode"))
+        image = self.image_mode_selector(mode, scale, minuend, subtrahend)
         
         # crops coordinates
         centers = []
@@ -314,7 +319,7 @@ class multiChannelImage():
         mask = self.__get_anomalousMask__(scale = scale)
         if mask is None: # create a zeros mask if mask file does not exists
             mask = np.zeros_like(image) 
-        image = np.stack((image, mask), axis = 2)
+        image = np.concatenate((image, np.expand_dims(mask, axis=2)), axis = 2)
 
         # run cropImage()
         crops, centers = cropImage(image, centers, size = size,
