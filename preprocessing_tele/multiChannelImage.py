@@ -63,8 +63,8 @@ class multiChannelImage():
             return None
         else:
             mask = read_singleImage(self.maskPath, scale = scale)
-            mask[mask<128] = 0
-            mask[mask>=128] = 255
+            #mask[mask<128] = 0
+            #mask[mask>=128] = 255
             return mask
         
 
@@ -143,10 +143,9 @@ class multiChannelImage():
             im_channel = self.__get_images__(scale = scale)[int(mode)]
             image = np.stack((im_channel, im_channel, im_channel), axis=2)
         elif mode == "custom_mix":
-            #single_lights = self.__get_images__(scale = scale)
-            diff_im1 = self.__get_diffImage__(scale = scale, minuend = 3, subtrahend = 0)
-            diff_im2 = self.__get_diffImage__(scale = scale, minuend = 2, subtrahend = 1)
-            image = np.stack((diff_im1, diff_im1, diff_im2), axis=2)
+            single_lights = self.__get_images__(scale = scale)
+            diff_im = self.__get_diffImage__(scale = scale, minuend = 2, subtrahend = 1)
+            image = np.stack((diff_im, single_lights[0], single_lights[3]), axis=2)
         else:
             raise(ValueError("Invalid argument: mode"))
 
@@ -221,7 +220,10 @@ class multiChannelImage():
                              minuend = 3,
                              subtrahend = 2,
                              min_defect_area = -1,
-                             region_mask_path = None
+                             region_mask_path = None,
+                             mask_threshold = [0, 255],
+                             max_lateral_dist = None,
+                             min_lateral_dist = None
                              ):
         """
         Create a set of anomalous crops using the coordinates from the metadata file.
@@ -237,7 +239,7 @@ class multiChannelImage():
         """
 
         # crops coordinates
-        centers, _ = self.__get_metadata__(scale = scale)
+        centers, imshape = self.__get_metadata__(scale = scale)
         centers = centers[centers[:,4]<1] 
 
         # regions restriction
@@ -245,6 +247,13 @@ class multiChannelImage():
             # get region mask (with correct allignment)
             region_mask = self.__get_allignedRegionMask__(region_mask_path, scale=scale)
             centers = [c for c in centers[:,:2] if region_mask[c[1], c[0]]==1]
+
+        # lateral distance restrictions
+        if max_lateral_dist is not None:
+            # only keep centers within the specified distance from borders
+            centers = [c for c in centers if (c[0]<max_lateral_dist or c[0]>(imshape[1]-max_lateral_dist))]
+        if min_lateral_dist is not None: # same thing for min distance
+            centers = [c for c in centers if (c[0]>min_lateral_dist and c[0]<(imshape[1]-min_lateral_dist))]
 
 
         if len(centers)>0:
@@ -264,7 +273,8 @@ class multiChannelImage():
                                     rand_shift = rand_shift,
                                     normalize = normalize,
                                     gauss_blur = gauss_blur,
-                                    min_area = min_defect_area)
+                                    min_area = min_defect_area,
+                                    mask_threshold = mask_threshold)
 
         else:
             crops = []

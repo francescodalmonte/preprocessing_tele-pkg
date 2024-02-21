@@ -35,7 +35,8 @@ def cropImage(image: np.array,
               rand_flip: bool = False,
               normalize: bool = True,
               gauss_blur: float = None,
-              min_area: int = -1) -> np.array:
+              min_area: int = -1,
+              mask_threshold: list[int,] = [0, 255]) -> np.array:
     """
     Returns a set of fixed-size square crops of an input image.
 
@@ -79,6 +80,10 @@ def cropImage(image: np.array,
             crop[:,:,:3] = (crop[:,:,:3] - np.mean(crop[:,:,:3])) + 128
 
         if crop.shape == (size, size, 4): # crops WITH mask
+            # threshold mask to only consider certain defects
+            crop[:,:,3][crop[:,:,3]<=mask_threshold[0]] = 0
+            crop[:,:,3][crop[:,:,3]>=mask_threshold[1]] = 0
+            crop[:,:,3][crop[:,:,3]>0] = 255
             mask_area = np.sum(crop[:,:,3]>0)
             if mask_area > min_area:
                 crops_set.append(crop)

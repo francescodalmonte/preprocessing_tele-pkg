@@ -38,6 +38,22 @@ if __name__ == "__main__":
     else: 
         region_mask_path=None
 
+    if len(config['MASK_THRESHOLD'])>0:
+        mask_threshold = [int(t.strip()) for t in config["MASK_THRESHOLD"].split(",")]
+    else:
+        mask_threshold = [0, 255]
+
+    if len(config['MAX_LATERAL_DISTANCE'].strip())>0:
+        max_lateral_dist = int(config['MAX_LATERAL_DISTANCE'])
+    else:
+        max_lateral_dist = None
+
+    if len(config['MIN_LATERAL_DISTANCE'].strip())>0:
+        min_lateral_dist = int(config['MIN_LATERAL_DISTANCE'])
+    else:
+        min_lateral_dist = None
+    
+
     rawNames = listRawDir(config['SOURCE_ROOT'], excluded)
     mkDirTreeFCDD(config['SAVE_ROOT'])    
     
@@ -58,7 +74,10 @@ if __name__ == "__main__":
                                                                        minuend = int(config['DIFF_MINUEND']),
                                                                        subtrahend = int(config['DIFF_SUBTRAHEND']),
                                                                        min_defect_area = int(config['MIN_DEFECT_AREA']),
-                                                                       region_mask_path = region_mask_path
+                                                                       region_mask_path = region_mask_path,
+                                                                       mask_threshold = mask_threshold,
+                                                                       max_lateral_dist = max_lateral_dist,
+                                                                       min_lateral_dist = min_lateral_dist
                                                                        )
         goodCrops, goodCenters = mcObject.fetch_goodCrops(scale = float(config['SCALE']),
                                                         size = float(config['SIZE']),
