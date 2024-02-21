@@ -267,6 +267,7 @@ class multiChannelImage():
                 mask = np.zeros_like(image)
             image = np.concatenate((image, np.expand_dims(mask, axis=2)), axis = 2)
 
+            print(f"len centers: {len(centers)}")
             # run cropImage()
             crops, centers = cropImage(image, centers, size = size,
                                     rand_flip = rand_flip,

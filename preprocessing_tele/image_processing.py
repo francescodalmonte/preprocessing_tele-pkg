@@ -17,12 +17,18 @@ def randomFlip(crop):
     
 
 
-def randomShift(x, y, max_shift = 100):
+def randomShift(x, y, max_shift,
+                limitsx = [0, 2048],
+                limitsy = [0, 7750]):
     """
     Performs a random shift of an input point [x,y] (max displacement = max_shift).
     """
-    x += np.random.randint(-max_shift, max_shift)
-    y += np.random.randint(-max_shift, max_shift)
+    print(f"centers before shift: {x}, {y}")
+
+    x += np.random.randint(np.max([-max_shift, (limitsx[0]-x)]), np.min([max_shift, (limitsx[1]-x)]))
+    y += np.random.randint(np.max([-max_shift, (limitsy[0]-y)]), np.min([max_shift, (limitsy[1]-y)]))
+
+    print(f"centers after shift: {x}, {y}")
     
     return x, y
 
@@ -66,7 +72,11 @@ def cropImage(image: np.array,
         x, y = c[:2].astype(int)
         l = int(size/2)
 
-        if rand_shift : x, y = randomShift(x, y, l-25) 
+        if rand_shift :
+            x, y = randomShift(x, y, l-25,
+                               limitsx = [size//2, image.shape[1]-size//2],
+                               limitsy = [size//2, image.shape[0]-size//2]) 
+
         crop = np.array(image[y-l : y+l, x-l : x+l])
         if rand_flip : crop = randomFlip(crop) 
 
@@ -91,6 +101,8 @@ def cropImage(image: np.array,
         elif crop.shape == (size, size, 3): # crops WITHOUT mask
             crops_set.append(crop)
             centers_set.append([x, y])
+        else: 
+            print(f"crop shape not recognized: {crop.shape}")
 
     return np.array(crops_set), np.array(centers_set)
 
