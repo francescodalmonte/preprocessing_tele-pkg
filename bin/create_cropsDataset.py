@@ -41,7 +41,7 @@ if __name__ == "__main__":
     if len(config['MASK_THRESHOLD'])>0:
         mask_threshold = [int(t.strip()) for t in config["MASK_THRESHOLD"].split(",")]
     else:
-        mask_threshold = [0, 255]
+        mask_threshold = [-1, 256]
 
     if len(config['MAX_LATERAL_DISTANCE'].strip())>0:
         max_lateral_dist = int(config['MAX_LATERAL_DISTANCE'])
