@@ -23,13 +23,10 @@ def randomShift(x, y, max_shift,
     """
     Performs a random shift of an input point [x,y] (max displacement = max_shift).
     """
-    print(f"centers before shift: {x}, {y}")
 
     x += np.random.randint(np.max([-max_shift, (limitsx[0]-x)]), np.min([max_shift, (limitsx[1]-x)]))
     y += np.random.randint(np.max([-max_shift, (limitsy[0]-y)]), np.min([max_shift, (limitsy[1]-y)]))
 
-    print(f"centers after shift: {x}, {y}")
-    
     return x, y
 
 
@@ -101,8 +98,6 @@ def cropImage(image: np.array,
         elif crop.shape == (size, size, 3): # crops WITHOUT mask
             crops_set.append(crop)
             centers_set.append([x, y])
-        else: 
-            print(f"crop shape not recognized: {crop.shape}")
 
     return np.array(crops_set), np.array(centers_set)
 
@@ -186,3 +181,19 @@ def saveCrops(save_to, crops_set, centers_set, prefix = "", suffix = "", mode = 
             img = crop
         
         cv.imwrite(path, img)
+
+
+
+def flatLightCorrection(image):
+        # blur
+        image_resized = cv.resize(image.copy(), (0,0), fx=0.25, fy=0.25, interpolation = cv.INTER_AREA)
+        image_filtered = gaussian_filter(image_resized,
+                                         sigma = (50, 50),
+                                         axes=(0,1),
+                                         truncate = 3)
+        image_filtered = cv.resize(image_filtered, (image.shape[1], image.shape[0]), interpolation = cv.INTER_LINEAR)
+        # normalize
+        image_n = (image/image_filtered)
+
+        return image_n
+
