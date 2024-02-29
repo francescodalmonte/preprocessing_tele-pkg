@@ -4,9 +4,11 @@ import os
 import numpy as np
 import cv2 as cv
 import json
+from scipy.ndimage import gaussian_filter
+
 
 from .IO import read_dirImage, read_metadataFile, read_singleImage
-from .image_processing import randomFlip, randomShift, cropImage
+from .image_processing import randomFlip, randomShift, cropImage, flatLightCorrection
 
 
 from matplotlib import pyplot as plt
@@ -47,8 +49,30 @@ class multiChannelImage():
         Read raw images and return grazing lights difference image.
         """
         imgs = self.__get_images__(scale = scale)
-        diffImage = imgs[minuend].astype(float) - imgs[subtrahend].astype(float)
+        diffImage = imgs[minuend].astype(float) - np.roll(imgs[subtrahend].astype(float), 1, axis=0)
         diffImage = (diffImage*0.65 + 128.).astype(int)
+        return diffImage
+
+    def __get_diffImage_beta__(self, scale: float = 1,
+                          suffix: str = "bmp",
+                          minuend = 3,
+                          subtrahend = 2):
+        """
+        Read raw images and return grazing lights difference image.
+        This function implements a preprocessing to correcting for the illumination
+        drop on the border of the images.
+        """
+        imgs = self.__get_images__(scale = scale)
+        img1 = imgs[minuend].astype(float)
+        img2 = imgs[subtrahend].astype(float)
+
+        img1_n = flatLightCorrection(img1)
+        img2_n = flatLightCorrection(img2)
+
+        # difference
+        diffImage = img1_n - np.roll(img2_n.astype(float), 1, axis=0)
+        diffImage = (diffImage*128.*0.65 + 128.).astype(np.uint8)
+
         return diffImage
 
     def __get_metadata__(self, scale: float = 1.):
@@ -63,8 +87,6 @@ class multiChannelImage():
             return None
         else:
             mask = read_singleImage(self.maskPath, scale = scale)
-            #mask[mask<128] = 0
-            #mask[mask>=128] = 255
             return mask
         
 
@@ -139,15 +161,27 @@ class multiChannelImage():
         if mode == "diff":
             im_channel = self.__get_diffImage__(scale = scale, minuend = minuend, subtrahend = subtrahend)
             image = np.stack((im_channel, im_channel, im_channel), axis=2)
+        elif mode == "diff_beta":
+            im_channel = self.__get_diffImage_beta__(scale = scale, minuend = minuend, subtrahend = subtrahend)
+            image = np.stack((im_channel, im_channel, im_channel), axis=2)
         elif mode in ["0", "1", "2", "3", "4"]:
             im_channel = self.__get_images__(scale = scale)[int(mode)]
             image = np.stack((im_channel, im_channel, im_channel), axis=2)
+        elif mode in ["0_beta", "1_beta", "2_beta", "3_beta", "4_beta"]:
+            im_channel = self.__get_images__(scale = scale)[int(mode[:-5])]
+            im_channel = flatLightCorrection(im_channel.astype(float))
+            im_channel = ((im_channel-1)*128.*0.65 + 128.).astype(np.uint8)
+            image = np.stack((im_channel, im_channel, im_channel), axis=2)
         elif mode == "custom_mix":
-            single_lights = self.__get_images__(scale = scale)
-            diff_im = self.__get_diffImage__(scale = scale, minuend = 2, subtrahend = 1)
-            image = np.stack((diff_im, single_lights[0], single_lights[3]), axis=2)
+            _, im2, im3, _ = self.__get_images__(scale = scale)
+            im2 = flatLightCorrection(im2.astype(float))
+            im3 = flatLightCorrection(im3.astype(float))
+            diff1 = np.clip(((im2 - np.roll(im3, -1, axis=0))*128*0.5 + 128.), 0, 255).astype(np.uint8)
+            diff2 = np.clip(((im2 - np.roll(im3, +1, axis=0))*128*0.5 + 128.), 0, 255).astype(np.uint8)
+            diff3 = np.clip(((im2 - im3)*128*0.5 + 128.), 0, 255).astype(np.uint8)
+            image = np.stack((diff1, diff2, diff3), axis=2)
         else:
-            raise(ValueError("Invalid argument: mode"))
+            raise(ValueError(f"Invalid argument: mode = {mode}"))
 
         return image
 
