@@ -61,8 +61,11 @@ class multiChannelImage():
             img2 = localContrastCorrection(img2)
 
         # difference
-        diffImage = img1 - np.roll(img2, -1, axis=0)
-        diffImage = diffImage*128.*0.5 + 128.
+        if set([minuend, subtrahend])==set([0,3]): # micro-alignment
+            img2 = np.roll(img2, -1, axis=0)
+        diffImage = img1 - img2
+        contrast_factor = 0.5 # 0.5 
+        diffImage = diffImage*contrast_factor + 128.
         diffImage = np.clip(diffImage, 0, 255).astype(np.uint8)
 
         return diffImage
@@ -86,8 +89,10 @@ class multiChannelImage():
             img2 = localContrastCorrection(img2)
 
         # sum
-        sumImage = img1 + np.roll(img2, -1, axis=0)
-        sumImage = (sumImage-2)*128.*0.5 + 128.
+        if set([add1, add2])==set([0,3]): # micro-alignment
+            img2 = np.roll(img2, -1, axis=0)
+        sumImage = img1 + img2
+        sumImage = (sumImage)*0.5
         sumImage = np.clip(sumImage, 0, 255).astype(np.uint8)
 
         return sumImage
@@ -202,7 +207,6 @@ class multiChannelImage():
             im_channel = self.__get_images__(scale = scale)[int(mode)]
             if contrast_correction:
                 im_channel = localContrastCorrection(im_channel.astype(float))
-                im_channel = (im_channel-1)*128.*0.5 + 128.
                 im_channel = np.clip(im_channel, 0, 255).astype(np.uint8)
             image = np.stack((im_channel, im_channel, im_channel), axis=2)
 

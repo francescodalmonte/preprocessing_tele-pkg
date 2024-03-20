@@ -184,7 +184,7 @@ def saveCrops(save_to, crops_set, centers_set, prefix = "", suffix = "", mode = 
 
 
 
-def localContrastCorrection(image):
+def localContrastCorrection(image, sigma = (50, 50), cf = 0.8):
         """
         Performs a local contrast normalization of an input image by dividing 
         it by its gaussian blurred version.
@@ -194,12 +194,17 @@ def localContrastCorrection(image):
         # blur
         image_resized = cv.resize(image.copy(), (0,0), fx=0.25, fy=0.25, interpolation = cv.INTER_AREA)
         image_filtered = gaussian_filter(image_resized,
-                                         sigma = (50, 50),
+                                         sigma = sigma,
                                          axes=(0,1),
                                          truncate = 3)
         image_filtered = cv.resize(image_filtered, (image.shape[1], image.shape[0]), interpolation = cv.INTER_LINEAR)
+        image_filtered = np.clip(image_filtered, 1., 255.) # avoid division by zero
+
         # normalize
         image_n = (image/image_filtered)
+
+        # back to 0-255 range
+        image_n = (image_n-1)*cf*128. + 128.
 
         return image_n
 

@@ -73,6 +73,7 @@ if __name__ == "__main__":
                                                                        mode = config['MODE'],
                                                                        term1 = int(config['TERM1']),
                                                                        term2 = int(config['TERM2']),
+                                                                       contrast_correction = bool(int(config['CONTRAST_CORRECTION'])),
                                                                        min_defect_area = int(config['MIN_DEFECT_AREA']),
                                                                        region_mask_path = region_mask_path,
                                                                        mask_threshold = mask_threshold,
@@ -88,6 +89,7 @@ if __name__ == "__main__":
                                                         mode = config['MODE'],
                                                         term1 = int(config['TERM1']),
                                                         term2 = int(config['TERM2']),
+                                                        contrast_correction = bool(int(config['CONTRAST_CORRECTION'])),
                                                         region_mask_path = region_mask_path                                                     
                                                         )
 
