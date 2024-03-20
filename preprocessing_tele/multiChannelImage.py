@@ -8,7 +8,7 @@ from scipy.ndimage import gaussian_filter
 
 
 from .IO import read_dirImage, read_metadataFile, read_singleImage
-from .image_processing import randomFlip, randomShift, cropImage, flatLightCorrection
+from .image_processing import randomFlip, randomShift, cropImage, localContrastCorrection
 
 
 from matplotlib import pyplot as plt
@@ -39,45 +39,64 @@ class multiChannelImage():
         """
         return read_dirImage(self.imdirPath,
                              scale=scale,
-                             suffix = "bmp")
+                             suffix = suffix)
 
-    def __get_diffImage__(self, scale: float = 1,
-                          suffix: str = "bmp",
-                          minuend = 3,
-                          subtrahend = 2):
-        """
-        Read raw images and return grazing lights difference image.
-        """
-        imgs = self.__get_images__(scale = scale)
-        diffImage = imgs[minuend].astype(float) - np.roll(imgs[subtrahend].astype(float), 1, axis=0)
-        diffImage = (diffImage*0.65 + 128.).astype(int)
-        return diffImage
 
-    def __get_diffImage_beta__(self, scale: float = 1,
+    def __get_diffImage__(self,
+                          scale: float = 1,
                           suffix: str = "bmp",
-                          minuend = 3,
-                          subtrahend = 2):
+                          minuend: int = 3,
+                          subtrahend: int = 2,
+                          contrast_correction: bool = False
+                          ):
         """
-        Read raw images and return grazing lights difference image.
-        This function implements a preprocessing to correcting for the illumination
-        drop on the border of the images.
+        Reads two raw images and return a difference.
         """
         imgs = self.__get_images__(scale = scale)
         img1 = imgs[minuend].astype(float)
         img2 = imgs[subtrahend].astype(float)
 
-        img1_n = flatLightCorrection(img1)
-        img2_n = flatLightCorrection(img2)
+        if contrast_correction:
+            img1 = localContrastCorrection(img1)
+            img2 = localContrastCorrection(img2)
 
         # difference
-        diffImage = img1_n - np.roll(img2_n.astype(float), 1, axis=0)
-        diffImage = (diffImage*128.*0.65 + 128.).astype(np.uint8)
+        diffImage = img1 - np.roll(img2, -1, axis=0)
+        diffImage = diffImage*128.*0.5 + 128.
+        diffImage = np.clip(diffImage, 0, 255).astype(np.uint8)
 
         return diffImage
+    
+
+    def __get_sumImage__(self, scale: float = 1,
+                         suffix: str = "bmp",
+                         add1: int = 3,
+                         add2: int = 2,
+                         contrast_correction: bool = False
+                         ):
+        """
+        Reads two raw images and returns a sum.
+        """
+        imgs = self.__get_images__(scale = scale)
+        img1 = imgs[add1].astype(float)
+        img2 = imgs[add2].astype(float)
+
+        if contrast_correction:
+            img1 = localContrastCorrection(img1)
+            img2 = localContrastCorrection(img2)
+
+        # sum
+        sumImage = img1 + np.roll(img2, -1, axis=0)
+        sumImage = (sumImage-2)*128.*0.5 + 128.
+        sumImage = np.clip(sumImage, 0, 255).astype(np.uint8)
+
+        return sumImage
+
 
     def __get_metadata__(self, scale: float = 1.):
         return read_metadataFile(self.metadataPath,
                                  scale=scale)
+
 
     def __get_anomalousMask__(self, scale: float = 1.):
         """
@@ -152,34 +171,51 @@ class multiChannelImage():
         return region_mask
 
 
-    def image_mode_selector(self, mode, scale, minuend, subtrahend):
+    def image_mode_selector(self,
+                            mode: str,
+                            scale: float = 1.,
+                            term1: int = 3,
+                            term2: int = 2,
+                            contrast_correction: bool = False
+                            ):
         """
         Function used inside fetch-functions to select the correct
         image, according to "mode".
+
         """
 
-        if mode == "diff":
-            im_channel = self.__get_diffImage__(scale = scale, minuend = minuend, subtrahend = subtrahend)
+        if mode =="sum":
+            im_channel = self.__get_sumImage__(scale = scale,
+                                               add1 = term1,
+                                               add2 = term2,
+                                               contrast_correction = contrast_correction)
             image = np.stack((im_channel, im_channel, im_channel), axis=2)
-        elif mode == "diff_beta":
-            im_channel = self.__get_diffImage_beta__(scale = scale, minuend = minuend, subtrahend = subtrahend)
+
+        elif mode == "diff":
+            im_channel = self.__get_diffImage__(scale = scale,
+                                                minuend = term1,
+                                                subtrahend = term2,
+                                                contrast_correction = contrast_correction)
             image = np.stack((im_channel, im_channel, im_channel), axis=2)
+
         elif mode in ["0", "1", "2", "3", "4"]:
             im_channel = self.__get_images__(scale = scale)[int(mode)]
+            if contrast_correction:
+                im_channel = localContrastCorrection(im_channel.astype(float))
+                im_channel = (im_channel-1)*128.*0.5 + 128.
+                im_channel = np.clip(im_channel, 0, 255).astype(np.uint8)
             image = np.stack((im_channel, im_channel, im_channel), axis=2)
-        elif mode in ["0_beta", "1_beta", "2_beta", "3_beta", "4_beta"]:
-            im_channel = self.__get_images__(scale = scale)[int(mode[:-5])]
-            im_channel = flatLightCorrection(im_channel.astype(float))
-            im_channel = ((im_channel-1)*128.*0.65 + 128.).astype(np.uint8)
-            image = np.stack((im_channel, im_channel, im_channel), axis=2)
+
+
         elif mode == "custom_mix":
             _, im2, im3, _ = self.__get_images__(scale = scale)
-            im2 = flatLightCorrection(im2.astype(float))
-            im3 = flatLightCorrection(im3.astype(float))
+            im2 = localContrastCorrection(im2.astype(float))
+            im3 = localContrastCorrection(im3.astype(float))
             diff1 = np.clip(((im2 - np.roll(im3, -1, axis=0))*128*0.5 + 128.), 0, 255).astype(np.uint8)
             diff2 = np.clip(((im2 - np.roll(im3, +1, axis=0))*128*0.5 + 128.), 0, 255).astype(np.uint8)
             diff3 = np.clip(((im2 - im3)*128*0.5 + 128.), 0, 255).astype(np.uint8)
             image = np.stack((diff1, diff2, diff3), axis=2)
+
         else:
             raise(ValueError(f"Invalid argument: mode = {mode}"))
 
@@ -194,8 +230,9 @@ class multiChannelImage():
                         normalize = True,
                         gauss_blur = None,
                         mode = "diff",
-                        minuend = 3,
-                        subtrahend = 2,
+                        term1 = 3,
+                        term2 = 2,
+                        contrast_correction = False,
                         region_mask_path = None
                         ):
         """
@@ -212,7 +249,11 @@ class multiChannelImage():
         """
 
         # images
-        image = self.image_mode_selector(mode, scale, minuend, subtrahend)
+        image = self.image_mode_selector(mode = mode,
+                                         scale = scale,
+                                         term1 = term1,
+                                         term2 = term2,
+                                         contrast_correction = contrast_correction)
         
         # crops coordinates
         mask = self.__get_goodMask__(scale = scale, size = size)
@@ -251,8 +292,9 @@ class multiChannelImage():
                              gauss_blur = None,
                              normalize = True,
                              mode = "diff",
-                             minuend = 3,
-                             subtrahend = 2,
+                             term1 = 3,
+                             term2 = 2,
+                             contrast_correction = False,
                              min_defect_area = -1,
                              region_mask_path = None,
                              mask_threshold = [0, 255],
@@ -292,7 +334,11 @@ class multiChannelImage():
 
         if len(centers)>0:
             # images
-            image = self.image_mode_selector(mode, scale, minuend, subtrahend)
+            image = self.image_mode_selector(mode = mode,
+                                             scale = scale,
+                                             term1 = term1,
+                                             term2 = term2,
+                                             contrast_correction = contrast_correction)
 
 
             # image for binary masks
@@ -327,8 +373,9 @@ class multiChannelImage():
                    normalize = True,
                    gauss_blur = None,
                    mode = "diff",
-                   minuend = 3,
-                   subtrahend = 2,
+                   term1 = 3,
+                   term2 = 2,
+                   contrast_correction = False,
                    align = True
                    ):
         """
@@ -344,7 +391,7 @@ class multiChannelImage():
         """
 
         # images
-        image = self.image_mode_selector(mode, scale, minuend, subtrahend)
+        image = self.image_mode_selector(mode, scale, term1, term2, contrast_correction)
         
         # crops coordinates
         centers = []

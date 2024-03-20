@@ -49,8 +49,8 @@ if __name__ == "__main__":
                                                  normalize = bool(int(config["NORMALIZE_CROPS"])),
                                                  gauss_blur = float(config['GAUSS_BLUR']),
                                                  mode = config['MODE'],
-                                                 minuend = int(config['DIFF_MINUEND']),
-                                                 subtrahend = int(config['DIFF_SUBTRAHEND']),
+                                                 term1 = int(config['TERM1']),
+                                                 term2 = int(config['TERM2']),
                                                  align=True
                                                  )
 
@@ -74,8 +74,8 @@ if __name__ == "__main__":
                                                  normalize = bool(int(config["NORMALIZE_CROPS"])),
                                                  gauss_blur = float(config['GAUSS_BLUR']),
                                                  mode = config['MODE'],
-                                                 minuend = int(config['DIFF_MINUEND']),
-                                                 subtrahend = int(config['DIFF_SUBTRAHEND']),
+                                                 term1 = int(config['TERM1']),
+                                                 term2 = int(config['TERM2']),
                                                  align=True
                                                  )
             

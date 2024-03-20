@@ -71,8 +71,8 @@ if __name__ == "__main__":
                                                                        normalize = bool(int(config["NORMALIZE_CROPS"])),
                                                                        gauss_blur = float(config['GAUSS_BLUR']),
                                                                        mode = config['MODE'],
-                                                                       minuend = int(config['DIFF_MINUEND']),
-                                                                       subtrahend = int(config['DIFF_SUBTRAHEND']),
+                                                                       term1 = int(config['TERM1']),
+                                                                       term2 = int(config['TERM2']),
                                                                        min_defect_area = int(config['MIN_DEFECT_AREA']),
                                                                        region_mask_path = region_mask_path,
                                                                        mask_threshold = mask_threshold,
@@ -86,8 +86,8 @@ if __name__ == "__main__":
                                                         normalize = bool(int(config["NORMALIZE_CROPS"])),
                                                         gauss_blur = float(config['GAUSS_BLUR']),
                                                         mode = config['MODE'],
-                                                        minuend = int(config['DIFF_MINUEND']),
-                                                        subtrahend = int(config['DIFF_SUBTRAHEND']),
+                                                        term1 = int(config['TERM1']),
+                                                        term2 = int(config['TERM2']),
                                                         region_mask_path = region_mask_path                                                     
                                                         )
 

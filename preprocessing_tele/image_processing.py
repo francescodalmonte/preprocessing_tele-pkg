@@ -171,12 +171,12 @@ def saveCrops(save_to, crops_set, centers_set, prefix = "", suffix = "", mode = 
         path = os.path.join(save_to, filename)
         
         if mode == "pseudo_color":
-            ch1 = crop[:,:,0]
+            ch1 = crop
             ch2 = CLAHEtransformation(ch1, clipLimit=3.0, tileGridSize=(5,5))
             ch3 = CLAHEtransformation(ch1, clipLimit=3.0, tileGridSize=(8,8))
             img = np.array([ch1, ch2, ch3]).transpose(1,2,0)
         elif mode == "color_map":
-            img = cv.applyColorMap(crop[:,:,0], cv.COLORMAP_JET)
+            img = cv.applyColorMap(crop, cv.COLORMAP_JET)
         else:
             img = crop
         
@@ -184,7 +184,13 @@ def saveCrops(save_to, crops_set, centers_set, prefix = "", suffix = "", mode = 
 
 
 
-def flatLightCorrection(image):
+def localContrastCorrection(image):
+        """
+        Performs a local contrast normalization of an input image by dividing 
+        it by its gaussian blurred version.
+        (requires float input image)
+        """
+
         # blur
         image_resized = cv.resize(image.copy(), (0,0), fx=0.25, fy=0.25, interpolation = cv.INTER_AREA)
         image_filtered = gaussian_filter(image_resized,
