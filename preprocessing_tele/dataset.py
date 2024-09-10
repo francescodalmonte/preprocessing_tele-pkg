@@ -106,10 +106,12 @@ def randomSplit_byImage(path: str, test_imgs_names: list[str, ]) -> None:
     Parameters
     ----------
     path: path to root dir of a FCDD-compatible dirtree.
-    n_test: number of images belonging to test set.
+    test_imgs_names: list of images belonging to test set.
 
     """
     path = os.path.abspath(path)
+
+    print(f"test_imgs_names: {test_imgs_names}")
 
     gTrainpath = os.path.join(path, "custom/train/tele/normal")
     gTestpath = os.path.join(path, "custom/test/tele/normal")
@@ -123,13 +125,15 @@ def randomSplit_byImage(path: str, test_imgs_names: list[str, ]) -> None:
 
     # lists of crops abspaths
 
-    good_crops = [ f for f in os.listdir(gTrainpath) if f.endswith(".png") ]
-    anom_crops = [ f for f in os.listdir(aTrainpath) if f.endswith(".png") ]
+    good_crops = [ f for f in os.listdir(gTrainpath) if (f.endswith(".jpg") or f.endswith(".png")) ]
+    anom_crops = [ f for f in os.listdir(aTrainpath) if (f.endswith(".jpg") or f.endswith(".png")) ]
 
     # lists of test set crops
 
     good_crops_C = [x for x in good_crops if (os.path.split(x)[1]).rsplit("_", 1)[0] in test_imgs_names]
     anom_crops_C = [x for x in anom_crops if (os.path.split(x)[1]).rsplit("_", 1)[0] in test_imgs_names]
+
+    print(len(good_crops_C), len(anom_crops_C))
 
     # move files
 

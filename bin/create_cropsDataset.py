@@ -57,63 +57,69 @@ if __name__ == "__main__":
     rawNames = listRawDir(config['SOURCE_ROOT'], excluded)
     mkDirTreeFCDD(config['SAVE_ROOT'])    
     
-
+    if bool(int(config["ONLY_TEST_DS"])): print("****Running in ONLY_TEST_DS mode****")
     for name in rawNames:
-        mcObject = multiChannelImage(name, config['SOURCE_ROOT'])
+        if bool(int(config["ONLY_TEST_DS"])) and (name not in config['TEST_IMAGES_NAMES']):
+            continue
+        else:
 
-        print(f"{name}")
+            mcObject = multiChannelImage(name, config['SOURCE_ROOT'])
 
-        # extract crops
-        anomalousCrops, anomalousCenters = mcObject.fetch_anomalousCrops(scale = float(config['SCALE']),
-                                                                       size = float(config['SIZE']),
-                                                                       rand_flip = False,
-                                                                       rand_shift = True,
-                                                                       normalize = bool(int(config["NORMALIZE_CROPS"])),
-                                                                       gauss_blur = float(config['GAUSS_BLUR']),
-                                                                       mode = config['MODE'],
-                                                                       term1 = int(config['TERM1']),
-                                                                       term2 = int(config['TERM2']),
-                                                                       contrast_correction = bool(int(config['CONTRAST_CORRECTION'])),
-                                                                       min_defect_area = int(config['MIN_DEFECT_AREA']),
-                                                                       region_mask_path = region_mask_path,
-                                                                       mask_threshold = mask_threshold,
-                                                                       max_lateral_dist = max_lateral_dist,
-                                                                       min_lateral_dist = min_lateral_dist
-                                                                       )
-        goodCrops, goodCenters = mcObject.fetch_goodCrops(scale = float(config['SCALE']),
-                                                        size = float(config['SIZE']),
-                                                        N = int(config['N_GOOD']),
-                                                        rand_flip = False,
-                                                        normalize = bool(int(config["NORMALIZE_CROPS"])),
-                                                        gauss_blur = float(config['GAUSS_BLUR']),
-                                                        mode = config['MODE'],
-                                                        term1 = int(config['TERM1']),
-                                                        term2 = int(config['TERM2']),
-                                                        contrast_correction = bool(int(config['CONTRAST_CORRECTION'])),
-                                                        region_mask_path = region_mask_path                                                     
-                                                        )
+            print(f"{name}")
 
-        print(f"N. anomalous/N. normal: {len(anomalousCrops)}/{len(goodCrops)}")
+            # extract crops
+            anomalousCrops, anomalousCenters = mcObject.fetch_anomalousCrops(scale = float(config['SCALE']),
+                                                                        size = float(config['SIZE']),
+                                                                        rand_flip = False,
+                                                                        rand_shift = True,
+                                                                        normalize = bool(int(config["NORMALIZE_CROPS"])),
+                                                                        gauss_blur = float(config['GAUSS_BLUR']),
+                                                                        mode = config['MODE'],
+                                                                        term1 = int(config['TERM1']),
+                                                                        term2 = int(config['TERM2']),
+                                                                        contrast_correction = bool(int(config['CONTRAST_CORRECTION'])),
+                                                                        contrast_correction_sigma = float(config['CONTRAST_CORRECTION_SIGMA']),
+                                                                        min_defect_area = int(config['MIN_DEFECT_AREA']),
+                                                                        region_mask_path = region_mask_path,
+                                                                        mask_threshold = mask_threshold,
+                                                                        max_lateral_dist = max_lateral_dist,
+                                                                        min_lateral_dist = min_lateral_dist
+                                                                        )
+            goodCrops, goodCenters = mcObject.fetch_goodCrops(scale = float(config['SCALE']),
+                                                            size = float(config['SIZE']),
+                                                            N = int(config['N_GOOD']),
+                                                            rand_flip = False,
+                                                            normalize = bool(int(config["NORMALIZE_CROPS"])),
+                                                            gauss_blur = float(config['GAUSS_BLUR']),
+                                                            mode = config['MODE'],
+                                                            term1 = int(config['TERM1']),
+                                                            term2 = int(config['TERM2']),
+                                                            contrast_correction = bool(int(config['CONTRAST_CORRECTION'])),
+                                                            contrast_correction_sigma = float(config['CONTRAST_CORRECTION_SIGMA']),
+                                                            region_mask_path = region_mask_path                                                     
+                                                            )
 
-        # save to file
-        saveCrops(os.path.join(config['SAVE_ROOT'], "custom/train/tele/normal"),
-                  goodCrops[:,:,:,:3],
-                  goodCenters,
-                  prefix = name+"_"
-                  ) 
+            print(f"N. anomalous/N. normal: {len(anomalousCrops)}/{len(goodCrops)}")
+
+            # save to file
+            saveCrops(os.path.join(config['SAVE_ROOT'], "custom/train/tele/normal"),
+                    goodCrops[:,:,:,:3],
+                    goodCenters,
+                    prefix = name+"_"
+                    ) 
 
 
-        if len(anomalousCrops)>0:
-            saveCrops(os.path.join(config['SAVE_ROOT'], "custom/train/tele/anomalous"),
-                      anomalousCrops[:,:,:,:3],
-                      anomalousCenters,
-                      prefix = name+"_"
-                      )
-            saveCrops(os.path.join(config['SAVE_ROOT'], "custom/train_maps/tele/anomalous"),
-                      anomalousCrops[:,:,:,3],
-                      anomalousCenters,
-                      prefix = name+"_"
-                      )
+            if len(anomalousCrops)>0:
+                saveCrops(os.path.join(config['SAVE_ROOT'], "custom/train/tele/anomalous"),
+                        anomalousCrops[:,:,:,:3],
+                        anomalousCenters,
+                        prefix = name+"_"
+                        )
+                saveCrops(os.path.join(config['SAVE_ROOT'], "custom/train_maps/tele/anomalous"),
+                        anomalousCrops[:,:,:,3],
+                        anomalousCenters,
+                        prefix = name+"_"
+                        )
         
 
     # split into train and test sets

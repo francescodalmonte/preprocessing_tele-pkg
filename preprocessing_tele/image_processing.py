@@ -39,7 +39,8 @@ def cropImage(image: np.array,
               normalize: bool = True,
               gauss_blur: float = None,
               min_area: int = -1,
-              mask_threshold: list[int,] = [0, 255]) -> np.array:
+              mask_threshold: list[int,] = [0, 256],
+              saturate_mask = True) -> np.array:
     """
     Returns a set of fixed-size square crops of an input image.
 
@@ -65,6 +66,8 @@ def cropImage(image: np.array,
     crops_set = []
     centers_set = []
 
+    assert size%2 == 0, "size must be an even number"
+
     for c in centers:
         x, y = c[:2].astype(int)
         l = int(size/2)
@@ -77,7 +80,7 @@ def cropImage(image: np.array,
         crop = np.array(image[y-l : y+l, x-l : x+l])
         if rand_flip : crop = randomFlip(crop) 
 
-        if gauss_blur is not None :
+        if gauss_blur is not None:
             if gauss_blur>0.:
                 # gaussian blurring
                 crop[:,:,:3] = gaussian_filter(crop[:,:,:3], sigma = gauss_blur, axes=(0,1))
@@ -90,7 +93,8 @@ def cropImage(image: np.array,
             # threshold mask to only consider certain defects
             crop[:,:,3][crop[:,:,3]<=mask_threshold[0]] = 0
             crop[:,:,3][crop[:,:,3]>=mask_threshold[1]] = 0
-            crop[:,:,3][crop[:,:,3]>0] = 255
+            if saturate_mask:
+                crop[:,:,3][crop[:,:,3]>0] = 255
             mask_area = np.sum(crop[:,:,3]>0)
             if mask_area > min_area:
                 crops_set.append(crop)
@@ -106,7 +110,10 @@ def tileImage(image: np.array,
               size: int = 224,
               overlap: int = 0,
               normalize: bool = True,
-              gauss_blur: float = None) -> np.array:
+              gauss_blur: float = None,
+              min_area: int = -1,
+              mask_threshold: list[int,] = [0, 256],
+              saturate_mask = True) -> np.array:
     """
     Create a regular tiling of an image (uses: cropImage function).
     """
@@ -122,7 +129,11 @@ def tileImage(image: np.array,
                                        rand_shift = False,
                                        rand_flip = False,
                                        normalize = normalize,
-                                       gauss_blur = gauss_blur)
+                                       gauss_blur = gauss_blur,
+                                       min_area = min_area,
+                                       mask_threshold = mask_threshold,
+                                       saturate_mask = saturate_mask
+                                       )
     
     return np.array(tiles_set[:,:,:]), np.array(centers_set)
 
@@ -184,7 +195,8 @@ def saveCrops(save_to, crops_set, centers_set, prefix = "", suffix = "", mode = 
 
 
 
-def localContrastCorrection(image, sigma = (50, 50), cf = 0.8):
+
+def localContrastCorrection(image, sigma = 10):
         """
         Performs a local contrast normalization of an input image by dividing 
         it by its gaussian blurred version.
@@ -194,7 +206,7 @@ def localContrastCorrection(image, sigma = (50, 50), cf = 0.8):
         # blur
         image_resized = cv.resize(image.copy(), (0,0), fx=0.25, fy=0.25, interpolation = cv.INTER_AREA)
         image_filtered = gaussian_filter(image_resized,
-                                         sigma = sigma,
+                                         sigma = (sigma, sigma),
                                          axes=(0,1),
                                          truncate = 3)
         image_filtered = cv.resize(image_filtered, (image.shape[1], image.shape[0]), interpolation = cv.INTER_LINEAR)
@@ -204,7 +216,7 @@ def localContrastCorrection(image, sigma = (50, 50), cf = 0.8):
         image_n = (image/image_filtered)
 
         # back to 0-255 range
-        image_n = (image_n-1)*cf*128. + 128.
+        image_n = (image_n-1)*128. + 128.
 
         return image_n
 

@@ -49,15 +49,18 @@ if __name__ == "__main__":
                                                  normalize = bool(int(config["NORMALIZE_CROPS"])),
                                                  gauss_blur = float(config['GAUSS_BLUR']),
                                                  mode = config['MODE'],
+                                                 splitq = bool(int(config['SPLITQ'])),
                                                  term1 = int(config['TERM1']),
                                                  term2 = int(config['TERM2']),
+                                                 contrast_correction = bool(int(config['CONTRAST_CORRECTION'])),
+                                                 contrast_correction_sigma = float(config['CONTRAST_CORRECTION_SIGMA']),
                                                  align=True
                                                  )
 
 
             # save to file
             saveCrops(os.path.join(config['SAVE_ROOT'], "custom/train/tele/normal"),
-                      crops[:,:,:,0],
+                      crops[:,:,:,:3],
                       centers,
                       prefix = name+"_"
                       ) 
@@ -74,18 +77,22 @@ if __name__ == "__main__":
                                                  normalize = bool(int(config["NORMALIZE_CROPS"])),
                                                  gauss_blur = float(config['GAUSS_BLUR']),
                                                  mode = config['MODE'],
+                                                 splitq = bool(int(config['SPLITQ'])),
                                                  term1 = int(config['TERM1']),
                                                  term2 = int(config['TERM2']),
-                                                 align=True
+                                                 contrast_correction = bool(int(config['CONTRAST_CORRECTION'])),
+                                                 contrast_correction_sigma = float(config['CONTRAST_CORRECTION_SIGMA']),
+                                                 align=True,
+                                                 min_defect_area = int(config['MIN_DEFECT_AREA'])
                                                  )
             
             saveCrops(os.path.join(config['SAVE_ROOT'], "custom/train/tele/anomalous"),
-                      crops[:,:,:,0],
+                      crops[:,:,:,:3],
                       centers,
                       prefix = name+"_"
                       )
             saveCrops(os.path.join(config['SAVE_ROOT'], "custom/train_maps/tele/anomalous"),
-                      crops[:,:,:,1],
+                      crops[:,:,:,3],
                       centers,
                       prefix = name+"_"
                       )

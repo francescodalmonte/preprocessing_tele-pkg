@@ -47,7 +47,8 @@ class multiChannelImage():
                           suffix: str = "bmp",
                           minuend: int = 3,
                           subtrahend: int = 2,
-                          contrast_correction: bool = False
+                          contrast_correction: bool = False,
+                          contrast_correction_sigma = 50
                           ):
         """
         Reads two raw images and return a difference.
@@ -57,8 +58,8 @@ class multiChannelImage():
         img2 = imgs[subtrahend].astype(float)
 
         if contrast_correction:
-            img1 = localContrastCorrection(img1)
-            img2 = localContrastCorrection(img2)
+            img1 = localContrastCorrection(img1, contrast_correction_sigma)
+            img2 = localContrastCorrection(img2, contrast_correction_sigma)
 
         # difference
         if set([minuend, subtrahend])==set([0,3]): # micro-alignment
@@ -75,7 +76,8 @@ class multiChannelImage():
                          suffix: str = "bmp",
                          add1: int = 3,
                          add2: int = 2,
-                         contrast_correction: bool = False
+                         contrast_correction: bool = False,
+                         contrast_correction_sigma = 50
                          ):
         """
         Reads two raw images and returns a sum.
@@ -85,8 +87,8 @@ class multiChannelImage():
         img2 = imgs[add2].astype(float)
 
         if contrast_correction:
-            img1 = localContrastCorrection(img1)
-            img2 = localContrastCorrection(img2)
+            img1 = localContrastCorrection(img1, contrast_correction_sigma)
+            img2 = localContrastCorrection(img2, contrast_correction_sigma)
 
         # sum
         if set([add1, add2])==set([0,3]): # micro-alignment
@@ -181,7 +183,8 @@ class multiChannelImage():
                             scale: float = 1.,
                             term1: int = 3,
                             term2: int = 2,
-                            contrast_correction: bool = False
+                            contrast_correction: bool = False,
+                            contrast_correction_sigma = 50
                             ):
         """
         Function used inside fetch-functions to select the correct
@@ -193,32 +196,46 @@ class multiChannelImage():
             im_channel = self.__get_sumImage__(scale = scale,
                                                add1 = term1,
                                                add2 = term2,
-                                               contrast_correction = contrast_correction)
+                                               contrast_correction = contrast_correction,
+                                               contrast_correction_sigma = contrast_correction_sigma)
             image = np.stack((im_channel, im_channel, im_channel), axis=2)
 
         elif mode == "diff":
             im_channel = self.__get_diffImage__(scale = scale,
                                                 minuend = term1,
                                                 subtrahend = term2,
-                                                contrast_correction = contrast_correction)
+                                                contrast_correction = contrast_correction,
+                                                contrast_correction_sigma = contrast_correction_sigma)
             image = np.stack((im_channel, im_channel, im_channel), axis=2)
 
         elif mode in ["0", "1", "2", "3", "4"]:
             im_channel = self.__get_images__(scale = scale)[int(mode)]
             if contrast_correction:
-                im_channel = localContrastCorrection(im_channel.astype(float))
+                im_channel = localContrastCorrection(im_channel.astype(float), 
+                                                     contrast_correction_sigma
+                                                     )
                 im_channel = np.clip(im_channel, 0, 255).astype(np.uint8)
             image = np.stack((im_channel, im_channel, im_channel), axis=2)
 
 
         elif mode == "custom_mix":
-            _, im2, im3, _ = self.__get_images__(scale = scale)
-            im2 = localContrastCorrection(im2.astype(float))
-            im3 = localContrastCorrection(im3.astype(float))
-            diff1 = np.clip(((im2 - np.roll(im3, -1, axis=0))*128*0.5 + 128.), 0, 255).astype(np.uint8)
-            diff2 = np.clip(((im2 - np.roll(im3, +1, axis=0))*128*0.5 + 128.), 0, 255).astype(np.uint8)
-            diff3 = np.clip(((im2 - im3)*128*0.5 + 128.), 0, 255).astype(np.uint8)
-            image = np.stack((diff1, diff2, diff3), axis=2)
+            im0, im1, im2, im3 = self.__get_images__(scale = scale)
+            im0 = np.roll(im0, -1, axis=0)
+
+            im0 = localContrastCorrection(im0.astype(float), 2)
+            im3 = localContrastCorrection(im3.astype(float), 2)
+
+            im0 = np.clip(im0, 0, 255).astype(np.uint8)
+            im3 = np.clip(im3, 0, 255).astype(np.uint8)
+
+            im_sum = self.__get_sumImage__(scale = scale,
+                                           add1 = term1,
+                                           add2 = term2,
+                                           contrast_correction = contrast_correction,
+                                           contrast_correction_sigma = contrast_correction_sigma)
+
+
+            image = np.stack((im_sum, im0*0.6, im3*0.6), axis=2)
 
         else:
             raise(ValueError(f"Invalid argument: mode = {mode}"))
@@ -237,6 +254,7 @@ class multiChannelImage():
                         term1 = 3,
                         term2 = 2,
                         contrast_correction = False,
+                        contrast_correction_sigma = 50,
                         region_mask_path = None
                         ):
         """
@@ -257,7 +275,8 @@ class multiChannelImage():
                                          scale = scale,
                                          term1 = term1,
                                          term2 = term2,
-                                         contrast_correction = contrast_correction)
+                                         contrast_correction = contrast_correction,
+                                         contrast_correction_sigma = contrast_correction_sigma)
         
         # crops coordinates
         mask = self.__get_goodMask__(scale = scale, size = size)
@@ -299,6 +318,7 @@ class multiChannelImage():
                              term1 = 3,
                              term2 = 2,
                              contrast_correction = False,
+                             contrast_correction_sigma = 50,
                              min_defect_area = -1,
                              region_mask_path = None,
                              mask_threshold = [0, 255],
@@ -342,7 +362,8 @@ class multiChannelImage():
                                              scale = scale,
                                              term1 = term1,
                                              term2 = term2,
-                                             contrast_correction = contrast_correction)
+                                             contrast_correction = contrast_correction,
+                                             contrast_correction_sigma = contrast_correction_sigma)
 
 
             # image for binary masks
@@ -353,13 +374,15 @@ class multiChannelImage():
 
             print(f"len centers: {len(centers)}")
             # run cropImage()
-            crops, centers = cropImage(image, centers, size = size,
-                                    rand_flip = rand_flip,
-                                    rand_shift = rand_shift,
-                                    normalize = normalize,
-                                    gauss_blur = gauss_blur,
-                                    min_area = min_defect_area,
-                                    mask_threshold = mask_threshold)
+            crops, centers = cropImage(image,
+                                       centers,
+                                       size = size,
+                                       rand_flip = rand_flip,
+                                       rand_shift = rand_shift,
+                                       normalize = normalize,
+                                       gauss_blur = gauss_blur,
+                                       min_area = min_defect_area,
+                                       mask_threshold = mask_threshold)
 
         else:
             crops = []
@@ -377,10 +400,13 @@ class multiChannelImage():
                    normalize = True,
                    gauss_blur = None,
                    mode = "diff",
+                   splitq = False,
                    term1 = 3,
                    term2 = 2,
                    contrast_correction = False,
-                   align = True
+                   contrast_correction_sigma = 50,
+                   align = True,
+                   min_defect_area = -1
                    ):
         """
         Funzione per crop bottoni.
@@ -395,7 +421,7 @@ class multiChannelImage():
         """
 
         # images
-        image = self.image_mode_selector(mode, scale, term1, term2, contrast_correction)
+        image = self.image_mode_selector(mode, scale, term1, term2, contrast_correction, contrast_correction_sigma)
         
         # crops coordinates
         centers = []
@@ -403,7 +429,13 @@ class multiChannelImage():
             for l in file.readlines():
                 cx, cy = l.split("\t")
                 cx, cy = int(cx.strip()), int(cy.strip())
-                centers.append([cx, cy, -1, -1, -1])
+                if not splitq:
+                    centers.append([cx, cy, -1, -1, -1])
+                else:
+                    centers.append([cx-160, cy+160, -1, -1, -1])
+                    centers.append([cx+160, cy-160, -1, -1, -1])
+                    centers.append([cx-160, cy-160, -1, -1, -1])
+                    centers.append([cx+160, cy+160, -1, -1, -1])
         centers = np.asarray(centers)
 
         if align:
@@ -418,10 +450,14 @@ class multiChannelImage():
         image = np.concatenate((image, np.expand_dims(mask, axis=2)), axis = 2)
 
         # run cropImage()
-        crops, centers = cropImage(image, centers, size = size,
+        crops, centers = cropImage(image,
+                                   centers,
+                                   size = size,
                                    rand_flip = rand_flip,
                                    rand_shift = False,
                                    normalize = normalize,
-                                   gauss_blur = gauss_blur)
+                                   gauss_blur = gauss_blur,
+                                   min_area = min_defect_area
+                                   )
 
         return crops, centers
