@@ -16,10 +16,11 @@ from matplotlib import pyplot as plt
 class multiChannelImage():
     """Base class for multichannel images"""
 
-    def __init__(self, name: str, rootpath: str):
+    def __init__(self, name: str, rootpath: str, suffix: str = "bmp"):
 
         self.name = name
         self.rootpath = rootpath
+        self.suffix = suffix
         self.imdirPath = os.path.join(rootpath, name + ".obj")
         self.metadataPath = os.path.join(rootpath, name + ".dat")
         self.maskPath = os.path.join(rootpath, name + "_M.png")
@@ -33,18 +34,17 @@ class multiChannelImage():
         return alignDict
 
 
-    def __get_images__(self, scale: float = 1, suffix: str = "bmp"):
+    def __get_images__(self, scale: float = 1):
         """
         Read raw images from file.
         """
         return read_dirImage(self.imdirPath,
                              scale=scale,
-                             suffix = suffix)
+                             suffix = self.suffix)
 
 
     def __get_diffImage__(self,
                           scale: float = 1,
-                          suffix: str = "bmp",
                           minuend: int = 3,
                           subtrahend: int = 2,
                           contrast_correction: bool = False,
@@ -73,7 +73,6 @@ class multiChannelImage():
     
 
     def __get_sumImage__(self, scale: float = 1,
-                         suffix: str = "bmp",
                          add1: int = 3,
                          add2: int = 2,
                          contrast_correction: bool = False,
@@ -209,7 +208,7 @@ class multiChannelImage():
             image = np.stack((im_channel, im_channel, im_channel), axis=2)
 
         elif mode in ["0", "1", "2", "3", "4"]:
-            im_channel = self.__get_images__(scale = scale)[int(mode)]
+            im_channel = self.__get_images__(scale = scale, )[int(mode)]
             if contrast_correction:
                 im_channel = localContrastCorrection(im_channel.astype(float), 
                                                      contrast_correction_sigma
